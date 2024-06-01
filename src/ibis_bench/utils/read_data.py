@@ -1,6 +1,7 @@
 import ibis
 import polars as pl
 import ibis.selectors as s
+import polars.selectors as ps
 
 from .gen_data import get_data_dir
 
@@ -72,5 +73,18 @@ def get_polars_tables(sf, n_partitions, lazy=True):
         partsupp = pl.read_parquet(f"{data_directory}/partsupp/*.parquet")
         region = pl.read_parquet(f"{data_directory}/region/*.parquet")
         supplier = pl.read_parquet(f"{data_directory}/supplier/*.parquet")
+
+    # TODO: report issue and remove
+    def _decimal_to_float(df):
+        return df.with_columns((ps.decimal().cast(pl.Float32)))
+
+    customer = _decimal_to_float(customer)
+    lineitem = _decimal_to_float(lineitem)
+    nation = _decimal_to_float(nation)
+    orders = _decimal_to_float(orders)
+    part = _decimal_to_float(part)
+    partsupp = _decimal_to_float(partsupp)
+    region = _decimal_to_float(region)
+    supplier = _decimal_to_float(supplier)
 
     return customer, lineitem, nation, orders, part, partsupp, region, supplier

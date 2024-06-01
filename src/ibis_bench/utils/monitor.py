@@ -38,7 +38,7 @@ def monitor_it(
     cpu_usage_start = process.cpu_percent(interval=None)
     start_time = time.time()
 
-    write_results(func(*args, **kwargs), sf, n_partitions, system, 1)
+    write_results(func(*args, **kwargs), sf, n_partitions, system, query_number)
 
     elapsed_time = time.time() - start_time
     cpu_usage_end = process.cpu_percent(interval=None)
@@ -86,7 +86,7 @@ def write_monitor_results(results, invocation_id=None, cloud=True):
 
 
 def get_timings_dir(cloud=True):
-    dir_name = "benchy_logs_v2"
+    dir_name = "benchy_logs_v4"
 
     if not cloud:
         if not os.path.exists(dir_name):
