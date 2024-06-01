@@ -1,0 +1,6 @@
+dist
+venv
+.env
+*.parquet
+results_data
+tpch_data
