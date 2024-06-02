@@ -7,7 +7,27 @@ from ibis_bench.utils.monitor import get_timings_dir
 
 st.set_page_config(layout="wide")
 st.title("WIP Ibis benchmarking")
-st.write("work in progress...takes a bit to load...")
+details = """
+work in progress...data takes a bit to load from GCS...
+
+the purpose of this dashboard is to compare TPC-H benchmarks across the big three single-node, Apache Arrow-based, modern OLAP engines: DuckDB, DataFusion, and Polars
+
+current state is I have data from running on my M1 32GB RAM MacBook Pro, shown below
+
+TODOs include:
+
+- [ ] add the remaining TPC-H queries
+- [ ] add DuckDB and DataFusion native
+- [ ] run on cloud VM(s) for reproducibility
+- [ ] open various issues on respective repos for bugs/improvements identified
+- [ ] sanity-check and finalize CPU/memory usage data + add to visualizations
+- [ ] generally improve the visualizations; make the app more interactive
+- [ ] write up a (very easily reproduceable) blog post
+
+TPC-H data is stored locally in Parquet format. the resulting benchmark data is stored in GCS in JSON format and read in via Ibis here
+"""
+details = details.strip()
+st.markdown(details)
 
 ibis.options.interactive = True
 ibis.options.repr.interactive.max_rows = 20
@@ -60,6 +80,6 @@ for sf in sorted(sfs):
         y="mean_execution_seconds",
         color="system",
         barmode="group",
-        title=f"Scale Factor {sf}",
+        title=f"scale factor: {sf} (~{sf} GB of data in memory; ~1/3rd on disk in Parquet)",
     )
     st.plotly_chart(c)
