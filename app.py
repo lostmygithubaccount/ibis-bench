@@ -14,7 +14,7 @@ the purpose of this dashboard is to compare TPC-H benchmarks across the big thre
 
 current state is I have data from running on my M1 32GB RAM MacBook Pro, shown below
 
-**IMPORTANT**: currently showing across 3 runs a n=1,64,128 partitions. it shouldn't matter but I wanted to verify this, will drop in the future
+**IMPORTANT**: currently showing across 3 runs a n=1, n=64, n=128 partitions. it shouldn't matter but I wanted to verify this, will drop in the future
 
 TODOs include:
 
