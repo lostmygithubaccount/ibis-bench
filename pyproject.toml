@@ -21,6 +21,7 @@ dependencies = [
     'psutil',
     'gcsfs',
     'plotly',
+    'streamlit',
 ]
 
 [project.urls]
