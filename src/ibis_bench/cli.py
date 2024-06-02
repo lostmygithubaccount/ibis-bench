@@ -68,7 +68,7 @@ def run(
                 from ibis_bench.queries.ibis import all_queries
 
                 customer, lineitem, nation, orders, part, partsupp, region, supplier = (
-                    get_ibis_tables(sf=sf, n_partitions=n_partitions, con=con)
+                    get_ibis_tables(sf=sf, n_partitions=n, con=con)
                 )
             elif system_parts[0] == "polars":
                 lazy = system_parts[1] == "lazy"
@@ -76,7 +76,7 @@ def run(
                 from ibis_bench.queries.polars import all_queries
 
                 customer, lineitem, nation, orders, part, partsupp, region, supplier = (
-                    get_polars_tables(sf=sf, n_partitions=n_partitions, lazy=lazy)
+                    get_polars_tables(sf=sf, n_partitions=n, lazy=lazy)
                 )
 
             queries = {

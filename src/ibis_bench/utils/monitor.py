@@ -12,6 +12,16 @@ from ibis_bench.utils.logging import log
 from ibis_bench.utils.write_data import write_results
 
 
+def get_timings_dir(cloud=True):
+    dir_name = "benchy_logs_v7"
+
+    if not cloud:
+        if not os.path.exists(dir_name):
+            os.makedirs(dir_name, exist_ok=True)
+
+    return dir_name
+
+
 def monitor_it(
     func,
     sf: int,
@@ -80,13 +90,3 @@ def write_monitor_results(results, invocation_id=None, cloud=True):
         with open(file_path, "w") as f:
             json.dump(results, f)
         log.info(f"\tdone writing monitor data to {file_path}...")
-
-
-def get_timings_dir(cloud=True):
-    dir_name = "benchy_logs_v5"
-
-    if not cloud:
-        if not os.path.exists(dir_name):
-            os.makedirs(dir_name, exist_ok=True)
-
-    return dir_name

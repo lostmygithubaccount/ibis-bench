@@ -14,7 +14,7 @@ the purpose of this dashboard is to compare TPC-H benchmarks across the big thre
 
 current state is I have data from running on my M1 32GB RAM MacBook Pro, shown below
 
-**IMPORTANT**: due to a bug in the cli the `ibis-polars` results for sf=150 are incorrect; will re-run and update soon
+**IMPORTANT**: currently showing across 3 runs a n=1,64,128 partitions. it shouldn't matter but I wanted to verify this, will drop in the future
 
 TODOs include:
 
@@ -81,7 +81,14 @@ for sf in sorted(sfs):
         x="query_number",
         y="mean_execution_seconds",
         color="system",
+        color_discrete_map={
+            "ibis-duckdb": "purple",
+            "ibis-datafusion": "green",
+            "ibis-polars": "red",
+            "polars-lazy": "orange",
+        },
         barmode="group",
+        pattern_shape="n_partitions",
         title=f"scale factor: {sf} (~{sf} GB of data in memory; ~{sf*2/5}GB on disk in Parquet)",
     )
     st.plotly_chart(c)
