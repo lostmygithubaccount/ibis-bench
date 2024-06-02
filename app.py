@@ -80,6 +80,6 @@ for sf in sorted(sfs):
         y="mean_execution_seconds",
         color="system",
         barmode="group",
-        title=f"scale factor: {sf} (~{sf} GB of data in memory; ~1/3rd on disk in Parquet)",
+        title=f"scale factor: {sf} (~{sf} GB of data in memory; ~{sf*2/5}GB on disk in Parquet)",
     )
     st.plotly_chart(c)
