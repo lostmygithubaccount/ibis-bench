@@ -49,6 +49,10 @@ clean:
 app:
     @streamlit run app.py
 
+# open
+open:
+    @open https://ibis-bench.streamlit.app
+
 # gen data
 gen-data:
     @bench gen-data {{extras}}

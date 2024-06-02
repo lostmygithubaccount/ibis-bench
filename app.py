@@ -54,10 +54,30 @@ t = (
     .cache()
 )
 
+cols = st.columns(4)
+with cols[0]:
+    st.metric(
+        label="total queries run",
+        value=t.count().to_pandas(),
+    )
+with cols[1]:
+    st.metric(
+        label="total runtime minutes",
+        value=round(t["execution_seconds"].sum().to_pandas() / 60, 2),
+    )
+with cols[2]:
+    st.metric(
+        label="total systems",
+        value=t.select("system").distinct().count().to_pandas(),
+    )
+with cols[3]:
+    st.metric(
+        label="total queries",
+        value=t.select("query_number").distinct().count().to_pandas(),
+    )
+
 agg = (
     t.filter(t["sf"] >= 1)
-    # .filter((t["system"].contains("duckdb")) | (t["system"].contains("datafusion")))
-    # .filter(t["query_number"] == 1)
     .group_by("system", "sf", "n_partitions", "query_number")
     .agg(
         mean_execution_seconds=t["execution_seconds"].mean(),
@@ -81,13 +101,6 @@ for sf in sorted(sfs):
         x="query_number",
         y="mean_execution_seconds",
         color="system",
-        # color_discrete_map={
-        #     "ibis-duckdb": "purple",
-        #     "ibis-datafusion": "green",
-        #     "ibis-polars": "red",
-        #     "polars-lazy": "orange",
-        # },
-        # color_discrete_sequence=["purple", "green", "red", "orange"],
         category_orders={
             "query_number": sorted(
                 agg.select("query_number")
@@ -107,6 +120,6 @@ for sf in sorted(sfs):
         },
         barmode="group",
         pattern_shape="n_partitions",
-        title=f"scale factor: {sf} (~{sf} GB of data in memory; ~{sf*2/5}GB on disk in Parquet)",
+        title=f"scale factor: {sf} (~{sf} GB of data in memory; ~{sf*2//5}GB on disk in Parquet)",
     )
     st.plotly_chart(c)
