@@ -81,11 +81,29 @@ for sf in sorted(sfs):
         x="query_number",
         y="mean_execution_seconds",
         color="system",
-        color_discrete_map={
-            "ibis-duckdb": "purple",
-            "ibis-datafusion": "green",
-            "ibis-polars": "red",
-            "polars-lazy": "orange",
+        # color_discrete_map={
+        #     "ibis-duckdb": "purple",
+        #     "ibis-datafusion": "green",
+        #     "ibis-polars": "red",
+        #     "polars-lazy": "orange",
+        # },
+        # color_discrete_sequence=["purple", "green", "red", "orange"],
+        category_orders={
+            "query_number": sorted(
+                agg.select("query_number")
+                .distinct()
+                .to_pandas()["query_number"]
+                .tolist()
+            ),
+            "system": sorted(
+                agg.select("system").distinct().to_pandas()["system"].tolist()
+            ),
+            "n_partitions": sorted(
+                agg.select("n_partitions")
+                .distinct()
+                .to_pandas()["n_partitions"]
+                .tolist()
+            ),
         },
         barmode="group",
         pattern_shape="n_partitions",
