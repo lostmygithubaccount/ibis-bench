@@ -9,7 +9,7 @@ import logging as log
 
 from datetime import datetime
 
-from .write_data import write_results
+from ibis_bench.utils.write_data import write_results
 
 
 log.basicConfig(level=log.INFO)
@@ -86,7 +86,7 @@ def write_monitor_results(results, invocation_id=None, cloud=True):
 
 
 def get_timings_dir(cloud=True):
-    dir_name = "benchy_logs_v4"
+    dir_name = "benchy_logs_v5"
 
     if not cloud:
         if not os.path.exists(dir_name):

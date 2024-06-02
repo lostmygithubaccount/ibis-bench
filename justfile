@@ -3,6 +3,9 @@
 # load environment variables
 set dotenv-load
 
+# variables
+extras := "-s 1 -s 10 -s 20 -s 40 -s 50 -s 100 -s 150 -h 1 -h 64 -h 128"
+
 # aliases
 alias fmt:=format
 
@@ -41,3 +44,23 @@ release:
 # clean
 clean:
     @rm -r dist || True
+
+# app
+app:
+    @streamlit run app.py
+
+# gen data
+gen-data:
+    @bench gen-data ${extras}
+
+# run
+run:
+    @bench run ibis-duckdb     ${extras}
+    @bench run ibis-datafusion ${extras}
+    @bench run ibis-polars     ${extras}
+    @bench run polars-lazy     ${extras}
+
+# e2e
+e2e:
+    just gen-data
+    just run
