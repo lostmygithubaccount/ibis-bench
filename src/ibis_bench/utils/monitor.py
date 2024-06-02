@@ -5,14 +5,11 @@ import uuid
 import gcsfs
 import psutil
 import tracemalloc
-import logging as log
 
 from datetime import datetime
 
+from ibis_bench.utils.logging import log
 from ibis_bench.utils.write_data import write_results
-
-
-log.basicConfig(level=log.INFO)
 
 
 def monitor_it(

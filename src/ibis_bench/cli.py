@@ -24,10 +24,10 @@ app = typer.Typer(help="ibis-bench", **TYPER_KWARGS)
 @app.command()
 def gen_data(
     scale_factor: list[int] = typer.Option(
-        [DEFAULT_SCALE_FACTORS], "--scale-factor", "-s", help="scale factors"
+        DEFAULT_SCALE_FACTORS, "--scale-factor", "-s", help="scale factors"
     ),
     n_partitions: list[int] = typer.Option(
-        [DEFAULT_N_PARTITIONS], "--n-partitions", "-n", help="number of partitions"
+        DEFAULT_N_PARTITIONS, "--n-partitions", "-n", help="number of partitions"
     ),
 ):
     """
@@ -42,13 +42,13 @@ def gen_data(
 def run(
     system: str = typer.Argument(..., help="system to run on"),
     scale_factor: list[int] = typer.Option(
-        [DEFAULT_SCALE_FACTORS], "--scale-factor", "-s", help="scale factors"
+        DEFAULT_SCALE_FACTORS, "--scale-factor", "-s", help="scale factors"
     ),
     n_partitions: list[int] = typer.Option(
-        [DEFAULT_N_PARTITIONS], "--n-partitions", "-n", help="number of partitions"
+        DEFAULT_N_PARTITIONS, "--n-partitions", "-n", help="number of partitions"
     ),
     q_number: list[int] = typer.Option(
-        None, "--query-number", "-q", help="query number"
+        None, "--query-number", "-q", help="query numbers"
     ),
 ):
     """
@@ -65,16 +65,7 @@ def run(
                 backend = system_parts[1]
                 con = ibis.connect(f"{backend}://")
 
-                from ibis_bench.queries.ibis import (
-                    q1,
-                    q2,
-                    q3,
-                    q4,
-                    q5,
-                    q6,
-                    q7,
-                    all_queries,
-                )
+                from ibis_bench.queries.ibis import all_queries
 
                 customer, lineitem, nation, orders, part, partsupp, region, supplier = (
                     get_ibis_tables(sf=sf, n_partitions=n_partitions, con=con)
@@ -82,34 +73,25 @@ def run(
             elif system_parts[0] == "polars":
                 lazy = system_parts[1] == "lazy"
 
-                from ibis_bench.queries.polars import (
-                    q1,
-                    q2,
-                    q3,
-                    q4,
-                    q5,
-                    q6,
-                    q7,
-                    all_queries,
-                )
+                from ibis_bench.queries.polars import all_queries
 
                 customer, lineitem, nation, orders, part, partsupp, region, supplier = (
                     get_polars_tables(sf=sf, n_partitions=n_partitions, lazy=lazy)
                 )
 
-            queries = (
-                all_queries
-                if q_number is None
-                else [globals()[f"q{q}"] for q in q_number]
-            )
+            queries = {
+                q: query
+                for q, query in enumerate(all_queries, start=1)
+                if q_number is None or q in q_number
+            }
 
-            for q_number, query in enumerate(queries, start=1):
+            for q, query in queries.items():
                 try:
                     monitor_it(
                         query,
                         sf=sf,
                         n_partitions=n,
-                        query_number=q_number,
+                        query_number=q,
                         system=system,
                         session_id=session_id,
                         customer=customer,
@@ -123,7 +105,7 @@ def run(
                     )
                 except Exception as e:
                     print(
-                        f"error running query {q_number} at scale factor {sf} and {n_partitions} partitions: {e}"
+                        f"error running query {q} at scale factor {sf} and {n_partitions} partitions: {e}"
                     )
 
 

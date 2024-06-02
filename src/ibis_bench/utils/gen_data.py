@@ -1,8 +1,7 @@
 import os
 import ibis
-import logging as log
 
-log.basicConfig(level=log.INFO)
+from ibis_bench.utils.logging import log
 
 
 def get_data_dir(sf, n_partitions):

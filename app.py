@@ -14,6 +14,8 @@ the purpose of this dashboard is to compare TPC-H benchmarks across the big thre
 
 current state is I have data from running on my M1 32GB RAM MacBook Pro, shown below
 
+**IMPORTANT**: due to a bug in the cli the `ibis-polars` results for sf=150 are incorrect; will re-run and update soon
+
 TODOs include:
 
 - [ ] add the remaining TPC-H queries

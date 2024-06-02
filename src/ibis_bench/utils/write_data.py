@@ -1,9 +1,8 @@
 import os
 import ibis
 import polars as pl
-import logging as log
 
-log.basicConfig(level=log.INFO)
+from ibis_bench.utils.logging import log
 
 
 def write_results(
