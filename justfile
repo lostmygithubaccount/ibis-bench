@@ -4,7 +4,7 @@
 set dotenv-load
 
 # variables
-extras := "-s 1 -s 10 -s 20 -s 40 -s 50 -s 100 -s 150 -h 1 -h 64 -h 128"
+extras := "-s 1 -s 10 -s 20 -s 40 -s 50 -s 100 -s 150 -n 1 -n 64 -n 128"
 
 # aliases
 alias fmt:=format
@@ -51,14 +51,14 @@ app:
 
 # gen data
 gen-data:
-    @bench gen-data ${extras}
+    @bench gen-data {{extras}}
 
 # run
 run:
-    @bench run ibis-duckdb     ${extras}
-    @bench run ibis-datafusion ${extras}
-    @bench run ibis-polars     ${extras}
-    @bench run polars-lazy     ${extras}
+    @bench run ibis-duckdb     {{extras}}
+    @bench run ibis-datafusion {{extras}}
+    @bench run polars-lazy     {{extras}}
+    @bench run ibis-polars     {{extras}}
 
 # e2e
 e2e:
