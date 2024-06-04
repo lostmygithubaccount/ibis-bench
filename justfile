@@ -24,12 +24,12 @@ build:
 
 # setup
 setup:
-    @uv pip install -r dev-requirements.txt
+    @pip install -r dev-requirements.txt
     just install
 
 # install
 install:
-    @uv pip install -e . --reinstall-package ibis_bench
+    @pip install -e . --reinstall-package ibis_bench
 
 # format
 format:
@@ -78,17 +78,23 @@ run:
 
 # e2e
 e2e:
-    just gen-data
+    just data-download
     just run
 
 # cloud shenanigans
+data-upload:
+    gsutil cp -r tpch_data gs://ibis-bench-tpch
+
+data-download:
+    gsutil cp -r gs://ibis-bench-tpch tpch_data
+
 vm-create:
     gcloud compute instances create ibis-bench \
         --zone=us-central1-b \
         --machine-type={{instance_type}} \
         --image=ubuntu-2004-focal-v20240519 \
         --image-project=ubuntu-os-cloud \
-        --boot-disk-size=500GB \
+        --boot-disk-size=800GB \
         --boot-disk-type=pd-ssd
 
 vm-ssh:
@@ -102,3 +108,8 @@ vm-resume:
 
 vm-delete:
     gcloud compute instances delete ibis-bench --zone=us-central1-b
+
+vm-run:
+    gcloud compute ssh ibis-bench --zone=us-central1-b --tunnel-through-iap -- bash -s < vm-bootstrap.sh
+
+# gcloud compute ssh ibis-bench --zone=us-central1-b --tunnel-through-iap --command "just e2e &"
