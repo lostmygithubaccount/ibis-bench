@@ -83,10 +83,11 @@ e2e:
 
 # cloud shenanigans
 data-upload:
-    gsutil cp -r tpch_data gs://ibis-bench-tpch
+    gsutil cp -r -m tpch_data gs://ibis-bench-tpch
 
 data-download:
-    gsutil cp -r gs://ibis-bench-tpch tpch_data
+    mkdir -p tpch_data
+    gsutil cp -r -m gs://ibis-bench-tpch/tpch_data .
 
 vm-create:
     gcloud compute instances create ibis-bench \
@@ -94,7 +95,7 @@ vm-create:
         --machine-type={{instance_type}} \
         --image=ubuntu-2004-focal-v20240519 \
         --image-project=ubuntu-os-cloud \
-        --boot-disk-size=800GB \
+        --boot-disk-size=1000GB \
         --boot-disk-type=pd-ssd
 
 vm-ssh:
