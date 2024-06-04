@@ -13,7 +13,7 @@ from ibis_bench.utils.write_data import write_results
 
 
 def get_timings_dir():
-    dir_name = "benchy_logs_v10"
+    dir_name = "bench_logs_v0"
     # dir_name = "bench_logs_temp"
 
     return dir_name
@@ -80,7 +80,7 @@ def write_monitor_results(results, cloud_logging=False):
 
     if cloud_logging:
         fs = gcsfs.GCSFileSystem()
-        file_path = f"gs://ibis-benchy/{dir_name}/{file_id}.json"
+        file_path = f"gs://ibis-bench/{dir_name}/{file_id}.json"
         open_fn = fs.open
     else:
         if not os.path.exists(dir_name):

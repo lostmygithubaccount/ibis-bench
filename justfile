@@ -8,8 +8,8 @@ set dotenv-load
 extras := "-s 1 -s 10 -s 20 -s 40 -s 50 -s 100 -s 150 -s 200"
 #extras := "-s 20 -s 40 -n 1 -n 64 -n 128 --cloud-logging"
 
-#instance_type := "c3-highcpu-22"
-instance_type := "c3d-highmem-16"
+instance_type := "c3-highcpu-22"
+#instance_type := "c3d-highmem-16"
 
 # aliases
 alias fmt:=format
