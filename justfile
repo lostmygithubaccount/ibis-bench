@@ -8,7 +8,8 @@ set dotenv-load
 extras := "-s 1 -s 10 -s 20 -s 40 -s 50 -s 100 -s 150 -s 200"
 #extras := "-s 20 -s 40 -n 1 -n 64 -n 128 --cloud-logging"
 
-instance_type := "c3-highcpu-22"
+#instance_type := "c3-highcpu-22"
+instance_type := "c3d-highmem-16"
 
 # aliases
 alias fmt:=format
@@ -83,11 +84,11 @@ e2e:
 
 # cloud shenanigans
 data-upload:
-    gsutil cp -r -m tpch_data gs://ibis-bench-tpch
+    gsutil -m cp -r tpch_data gs://ibis-bench-tpch
 
 data-download:
     mkdir -p tpch_data
-    gsutil cp -r -m gs://ibis-bench-tpch/tpch_data .
+    gsutil -m cp -r gs://ibis-bench-tpch/tpch_data .
 
 vm-create:
     gcloud compute instances create ibis-bench \
