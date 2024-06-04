@@ -31,12 +31,16 @@ def write_results(
         log.info(
             f"\twriting polars (lazy) result to {os.path.join(dirname, f'q_{q_number}.parquet')}..."
         )
-        try:
-            # https://github.com/pola-rs/polars/issues/6603
-            # InvalidOperationError: sink_Parquet(ParquetWriteOptions { compression: Zstd(None), statistics: true, row_group_size: None, data_pagesize_limit: None, maintain_order: true }) not yet supported in standard engine. Use 'collect().write_parquet()'
-            # "not all queries are supported for sinking"
-            res.sink_parquet(os.path.join(dirname, f"q_{q_number}.parquet"))
-        except:
-            res.collect().write_parquet(os.path.join(dirname, f"q_{q_number}.parquet"))
+        res.collect().write_parquet(os.path.join(dirname, f"q_{q_number}.parquet"))
+
+        # NOTE: sinking parquet caused multiple issues, including: https://github.com/pola-rs/polars/issues/16694
+        # for now, we'll just use collect + write_parquet and revisit later when the streaming engine is redone
+        # try:
+        #     # https://github.com/pola-rs/polars/issues/6603
+        #     # InvalidOperationError: sink_Parquet(ParquetWriteOptions { compression: Zstd(None), statistics: true, row_group_size: None, data_pagesize_limit: None, maintain_order: true }) not yet supported in standard engine. Use 'collect().write_parquet()'
+        #     # "not all queries are supported for sinking"
+        #     # they should fail instantly, so we can just use collect() + write_parquet if this fails
+        #     res.sink_parquet(os.path.join(dirname, f"q_{q_number}.parquet"))
+        # except:
 
     del res

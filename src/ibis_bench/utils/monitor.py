@@ -12,12 +12,9 @@ from ibis_bench.utils.logging import log
 from ibis_bench.utils.write_data import write_results
 
 
-def get_timings_dir(cloud=True):
-    dir_name = "benchy_logs_v7"
-
-    if not cloud:
-        if not os.path.exists(dir_name):
-            os.makedirs(dir_name, exist_ok=True)
+def get_timings_dir():
+    dir_name = "benchy_logs_v9"
+    # dir_name = "bench_logs_temp"
 
     return dir_name
 
@@ -29,6 +26,8 @@ def monitor_it(
     query_number: int,
     system: str,
     session_id: str,
+    cloud_logging: bool,
+    instance_type: str,
     *args,
     **kwargs,
 ):
@@ -46,6 +45,9 @@ def monitor_it(
     start_time = time.time()
 
     write_results(func(*args, **kwargs), sf, n_partitions, system, query_number)
+    log.info(
+        f"done running and monitoring for system {system} query {query_number} at scale factor {sf} and {n_partitions} partitions (session id {session_id})..."
+    )
 
     elapsed_time = time.time() - start_time
     cpu_usage_end = process.cpu_percent(interval=None)
@@ -58,6 +60,7 @@ def monitor_it(
 
     data = {
         "session_id": session_id,
+        "instance_type": instance_type,
         "system": system,
         "timestamp": datetime.utcnow().isoformat(),
         "sf": sf,
@@ -68,25 +71,24 @@ def monitor_it(
         "peak_memory": peak / 1024**3,
     }
 
-    write_monitor_results(data)
+    write_monitor_results(data, cloud_logging=cloud_logging)
 
 
-def write_monitor_results(results, invocation_id=None, cloud=True):
-    dir_name = get_timings_dir(cloud=cloud)
+def write_monitor_results(results, cloud_logging=False):
+    file_id = str(uuid.uuid4())
+    dir_name = get_timings_dir()
 
-    if invocation_id is None:
-        invocation_id = str(uuid.uuid4())
-
-    if cloud:
+    if cloud_logging:
         fs = gcsfs.GCSFileSystem()
-        file_path = f"gs://ibis-benchy/{dir_name}/{invocation_id}.json"
-        log.info(f"\twriting monitor data to {file_path}...")
-        with fs.open(file_path, "w") as f:
-            json.dump(results, f)
-        log.info(f"\tdone writing monitor data to {file_path}...")
+        file_path = f"gs://ibis-benchy/{dir_name}/{file_id}.json"
+        open_fn = fs.open
     else:
-        file_path = f"{dir_name}/{invocation_id}.json"
-        log.info(f"\twriting monitor data to {file_path}...")
-        with open(file_path, "w") as f:
-            json.dump(results, f)
-        log.info(f"\tdone writing monitor data to {file_path}...")
+        if not os.path.exists(dir_name):
+            os.makedirs(dir_name, exist_ok=True)
+        file_path = f"{dir_name}/{file_id}.json"
+        open_fn = open
+
+    log.info(f"\twriting monitor data to {file_path}...")
+    with open_fn(file_path, "w") as f:
+        json.dump(results, f)
+    log.info(f"\tdone writing monitor data to {file_path}...")

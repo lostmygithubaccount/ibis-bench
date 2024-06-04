@@ -26,7 +26,7 @@ def get_ibis_tables(sf, n_partitions, con=ibis.connect("duckdb://")):
         f"{data_directory}/supplier/*.parquet", table_name="supplier"
     )
 
-    # TODO: report issue and remove; also duplicate for Polars native
+    # TODO: report issue(s) (DataFusion backend issue)
     def _decimal_to_float(t):
         return t.mutate(
             s.across(
@@ -43,6 +43,25 @@ def get_ibis_tables(sf, n_partitions, con=ibis.connect("duckdb://")):
     partsupp = _decimal_to_float(partsupp)
     region = _decimal_to_float(region)
     supplier = _decimal_to_float(supplier)
+
+    # TODO: keep this or figure something out and remove
+    def _drop_hive_cols(t):
+        # NOTE: some backends don't create the hive-partitioned columns (at least by default)
+        # DuckDB and Polars do, DataFusion doesn't, so first check if the column(s) exist
+        if "sf" in t.columns:
+            t = t.drop("sf")
+        if "n" in t.columns:
+            t = t.drop("n")
+        return t
+
+    customer = _drop_hive_cols(customer)
+    lineitem = _drop_hive_cols(lineitem)
+    nation = _drop_hive_cols(nation)
+    orders = _drop_hive_cols(orders)
+    part = _drop_hive_cols(part)
+    partsupp = _drop_hive_cols(partsupp)
+    region = _drop_hive_cols(region)
+    supplier = _drop_hive_cols(supplier)
 
     return customer, lineitem, nation, orders, part, partsupp, region, supplier
 
@@ -74,9 +93,9 @@ def get_polars_tables(sf, n_partitions, lazy=True):
         region = pl.read_parquet(f"{data_directory}/region/*.parquet")
         supplier = pl.read_parquet(f"{data_directory}/supplier/*.parquet")
 
-    # TODO: report issue and remove
+    # TODO: report issue(s) (issue(s) at higher SFs)
     def _decimal_to_float(df):
-        return df.with_columns((ps.decimal().cast(pl.Float32)))
+        return df.with_columns((ps.decimal().cast(pl.Float64)))
 
     customer = _decimal_to_float(customer)
     lineitem = _decimal_to_float(lineitem)
@@ -86,5 +105,18 @@ def get_polars_tables(sf, n_partitions, lazy=True):
     partsupp = _decimal_to_float(partsupp)
     region = _decimal_to_float(region)
     supplier = _decimal_to_float(supplier)
+
+    # TODO: keep this or figure something out and remove
+    def _drop_hive_cols(df):
+        return df.drop(["sf", "n"])
+
+    customer = _drop_hive_cols(customer)
+    lineitem = _drop_hive_cols(lineitem)
+    nation = _drop_hive_cols(nation)
+    orders = _drop_hive_cols(orders)
+    part = _drop_hive_cols(part)
+    partsupp = _drop_hive_cols(partsupp)
+    region = _drop_hive_cols(region)
+    supplier = _drop_hive_cols(supplier)
 
     return customer, lineitem, nation, orders, part, partsupp, region, supplier

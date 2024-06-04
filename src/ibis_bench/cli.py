@@ -3,6 +3,7 @@ import uuid
 import typer
 import warnings
 
+from ibis_bench.utils.logging import log
 from ibis_bench.utils.monitor import monitor_it
 from ibis_bench.utils.gen_data import generate_data
 from ibis_bench.utils.read_data import get_ibis_tables, get_polars_tables
@@ -50,6 +51,15 @@ def run(
     q_number: list[int] = typer.Option(
         None, "--query-number", "-q", help="query numbers"
     ),
+    exclude_queries: list[int] = typer.Option(
+        None, "--exclude-queries", "-e", help="exclude query numbers"
+    ),
+    cloud_logging: bool = typer.Option(
+        False, "--cloud-logging", "-c", help="log monitoring data to cloud"
+    ),
+    instance_type: str = typer.Option(
+        "Cody's work macbook", "--instance-type", "-i", help="instance type"
+    ),
 ):
     """
     run tpc-h benchmarking queries
@@ -61,17 +71,29 @@ def run(
         for n in sorted(n_partitions):
             system_parts = system.split("-")
 
-            if system_parts[0] == "ibis":
+            if system_parts[0] == "ibis" and system_parts[-1] != "sql":
                 backend = system_parts[1]
                 con = ibis.connect(f"{backend}://")
+                log.info(f"connected to {backend} backend")
 
                 from ibis_bench.queries.ibis import all_queries
 
                 customer, lineitem, nation, orders, part, partsupp, region, supplier = (
                     get_ibis_tables(sf=sf, n_partitions=n, con=con)
                 )
+            elif system_parts[0] == "ibis" and system_parts[-1] == "sql":
+                backend = system_parts[1]
+                con = ibis.connect(f"{backend}://")
+                log.info(f"connected to {backend} backend (for SQL)")
+
+                from ibis_bench.queries.sql import all_queries
+
+                customer, lineitem, nation, orders, part, partsupp, region, supplier = (
+                    get_ibis_tables(sf=sf, n_partitions=n, con=con)
+                )
             elif system_parts[0] == "polars":
                 lazy = system_parts[1] == "lazy"
+                log.info(f"using Polars with lazy={lazy}")
 
                 from ibis_bench.queries.polars import all_queries
 
@@ -82,7 +104,8 @@ def run(
             queries = {
                 q: query
                 for q, query in enumerate(all_queries, start=1)
-                if q_number is None or q in q_number
+                if (q_number is None or q in q_number)
+                and (exclude_queries is None or q not in exclude_queries)
             }
 
             for q, query in queries.items():
@@ -94,6 +117,9 @@ def run(
                         query_number=q,
                         system=system,
                         session_id=session_id,
+                        cloud_logging=cloud_logging,
+                        instance_type=instance_type,
+                        # tpch tables
                         customer=customer,
                         lineitem=lineitem,
                         nation=nation,
@@ -102,10 +128,11 @@ def run(
                         partsupp=partsupp,
                         region=region,
                         supplier=supplier,
+                        dialect=backend if backend else None,
                     )
                 except Exception as e:
                     print(
-                        f"error running query {q} at scale factor {sf} and {n_partitions} partitions: {e}"
+                        f"error running query {q} at scale factor {sf} and {n} partitions: {e}"
                     )
 
 

@@ -38,22 +38,36 @@ ibis.options.repr.interactive.max_columns = None
 # dark mode for px
 px.defaults.template = "plotly_dark"
 
-PROJECT = "voltrondata-demo"
-BUCKET = "ibis-benchy"
-
-fs = gcsfs.GCSFileSystem(project=PROJECT)
-
+# ibis connection
 con = ibis.connect("duckdb://")
-con.register_filesystem(fs)
 
+# cloud logs
+cloud = False
+
+if cloud:
+    PROJECT = "voltrondata-demo"
+    BUCKET = "ibis-benchy"
+
+    fs = gcsfs.GCSFileSystem(project=PROJECT)
+
+    con.register_filesystem(fs)
+
+    json_glob = f"gs://{BUCKET}/{get_timings_dir()}/*.json"
+else:
+    json_glob = f"{get_timings_dir()}/*.json"
+
+
+# read data
 t = (
-    con.read_json(f"gs://{BUCKET}/{get_timings_dir()}/*.json", ignore_errors=True)
+    con.read_json(json_glob, ignore_errors=True)
     .mutate(
         timestamp=ibis._["timestamp"].cast("timestamp"),
     )
     .cache()
 )
 
+
+# streamlit viz beyond this point
 cols = st.columns(4)
 with cols[0]:
     st.metric(
@@ -94,6 +108,15 @@ agg = (
 )
 
 sfs = agg.select("sf").distinct().to_pandas()["sf"].tolist()
+category_orders = {
+    "query_number": sorted(
+        agg.select("query_number").distinct().to_pandas()["query_number"].tolist()
+    ),
+    "system": sorted(agg.select("system").distinct().to_pandas()["system"].tolist()),
+    "n_partitions": sorted(
+        agg.select("n_partitions").distinct().to_pandas()["n_partitions"].tolist()
+    ),
+}
 
 for sf in sorted(sfs):
     c = px.bar(
@@ -101,23 +124,7 @@ for sf in sorted(sfs):
         x="query_number",
         y="mean_execution_seconds",
         color="system",
-        category_orders={
-            "query_number": sorted(
-                agg.select("query_number")
-                .distinct()
-                .to_pandas()["query_number"]
-                .tolist()
-            ),
-            "system": sorted(
-                agg.select("system").distinct().to_pandas()["system"].tolist()
-            ),
-            "n_partitions": sorted(
-                agg.select("n_partitions")
-                .distinct()
-                .to_pandas()["n_partitions"]
-                .tolist()
-            ),
-        },
+        category_orders=category_orders,
         barmode="group",
         pattern_shape="n_partitions",
         title=f"scale factor: {sf} (~{sf} GB of data in memory; ~{sf*2//5}GB on disk in Parquet)",

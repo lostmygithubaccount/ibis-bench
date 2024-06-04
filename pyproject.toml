@@ -16,8 +16,8 @@ classifiers = [
 ]
 dependencies = [
     'duckdb==0.10.3',
-    'datafusion=38.0.1',
-    'polars==0.20.3',
+    'datafusion==38.0.1',
+    'polars==0.20.31',
     'ibis-framework',
     'typer',
     'python-dotenv',

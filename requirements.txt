@@ -1,2 +1,2 @@
--r dev-requirements.txt
+# this file is for streamlit
 -e .
