@@ -5,8 +5,10 @@ set dotenv-load
 
 # variables
 #extras := "-s 1 -s 10 -n"
-extras := "-s 1 -s 10 -s 20 -s 40 -s 50 -s 100 -s 150 -n 1 -n 64 -n 128 --cloud-logging"
+extras := "-s 1 -s 10 -s 20 -s 40 -s 50 -s 100 -s 150 -s 200"
 #extras := "-s 20 -s 40 -n 1 -n 64 -n 128 --cloud-logging"
+
+instance_type := "c3-highcpu-22"
 
 # aliases
 alias fmt:=format
@@ -61,14 +63,14 @@ gen-data:
 
 # run
 run-dataframe:
-    @bench run ibis-duckdb     {{extras}}
-    @bench run ibis-datafusion {{extras}}
-    @bench run polars-lazy     {{extras}}
-    @bench run ibis-polars     {{extras}}
+    @bench run ibis-duckdb          {{extras}} -c -i {{instance_type}}
+    @bench run ibis-datafusion      {{extras}} -c -i {{instance_type}}
+    @bench run polars-lazy          {{extras}} -c -i {{instance_type}}
+    @bench run ibis-polars          {{extras}} -c -i {{instance_type}}
 
 run-sql:
-    @bench run ibis-duckdb-sql {{extras}}
-    @bench run ibis-datafusion-sql {{extras}}
+    @bench run ibis-duckdb-sql      {{extras}} -c -i {{instance_type}}
+    @bench run ibis-datafusion-sql  {{extras}} -c -i {{instance_type}}
 
 run:
     just run-dataframe
@@ -80,13 +82,23 @@ e2e:
     just run
 
 # cloud shenanigans
-create-vm:
+vm-create:
     gcloud compute instances create ibis-bench \
         --zone=us-central1-b \
-        --machine-type=c3-highcpu-22 \
+        --machine-type={{instance_type}} \
         --image=ubuntu-2004-focal-v20240519 \
-        --image-project=ubuntu-os-cloud
+        --image-project=ubuntu-os-cloud \
+        --boot-disk-size=500GB \
+        --boot-disk-type=pd-ssd
 
-#--image-family=ubuntu-2004-lts
-ssh-vm:
+vm-ssh:
     gcloud compute ssh ibis-bench --zone=us-central1-b --tunnel-through-iap
+
+vm-suspend:
+    gcloud compute instances stop ibis-bench --zone=us-central1-b
+
+vm-resume:
+    gcloud compute instances start ibis-bench --zone=us-central1-b
+
+vm-delete:
+    gcloud compute instances delete ibis-bench --zone=us-central1-b

@@ -13,7 +13,7 @@ from ibis_bench.utils.write_data import write_results
 
 
 def get_timings_dir():
-    dir_name = "benchy_logs_v9"
+    dir_name = "benchy_logs_v10"
     # dir_name = "bench_logs_temp"
 
     return dir_name

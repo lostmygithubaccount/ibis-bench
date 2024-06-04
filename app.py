@@ -42,7 +42,15 @@ px.defaults.template = "plotly_dark"
 con = ibis.connect("duckdb://")
 
 # cloud logs
-cloud = False
+cloud = True
+
+
+# TODO: remove
+def get_timings_dir():
+    dir_name = "benchy_logs_v9"
+
+    return dir_name
+
 
 if cloud:
     PROJECT = "voltrondata-demo"
