@@ -105,7 +105,7 @@ with cols[3]:
     )
 
 agg = (
-    t.filter(t["sf"] >= 1)
+    t.filter(t["sf"] >= 2) # TODO: change back to 1
     .group_by("system", "sf", "n_partitions", "query_number")
     .agg(
         mean_execution_seconds=t["execution_seconds"].mean(),
