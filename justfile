@@ -4,12 +4,14 @@
 set dotenv-load
 
 # variables
-#extras := "-s 1 -s 10 -n"
-extras := "-s 1 -s 10 -s 20 -s 40 -s 50 -s 100 -s 150"
-#extras := "-s 20 -s 40 -n 1 -n 64 -n 128 --cloud-logging"
+extras := "-s 1 -s 10 -s 20 -s 40 -s 50 -s 40 -s 50 -s 100"
+#extras := "-s 1 -s 10 -s 20 -s 40 -s 50 -s 100 -s 150 -s 200"
 
-instance_type := "c3-highcpu-22"
-#instance_type := "c3d-highmem-16"
+# instance_type := "work laptop"
+# instance_type := "personal laptop"
+# instance_type := "c3-highcpu-22"
+# instance_type := "c3d-highmem-16"
+instance_type := "c3-highmem-88"
 
 # aliases
 alias fmt:=format
@@ -69,6 +71,10 @@ clean-all:
 app:
     @streamlit run app.py
 
+# dev app
+app-dev:
+    @streamlit run dev-app.py
+
 # open
 open:
     @open https://ibis-bench.streamlit.app
@@ -79,21 +85,17 @@ gen-data:
 
 # run
 run *args:
-    @bench run {{args}} -i {{instance_type}}
+    @bench run {{args}} -i "{{instance_type}}"
 
-run-dataframe:
-    just run ibis-duckdb {{extras}}
-    just run ibis-datafusion  {{extras}}
-    just run polars-lazy  {{extras}}
-    just run ibis-polars  {{extras}}
+run-all-parquet:
+    just run ibis-duckdb ibis-duckdb-sql ibis-datafusion ibis-datafusion-sql polars-lazy ibis-polars {{extras}}
 
-run-sql:
-    just run ibis-duckdb-sql  {{extras}}
-    just run ibis-datafusion-sql  {{extras}}
+run-all-csv:
+    just run ibis-duckdb ibis-duckdb-sql ibis-datafusion ibis-datafusion-sql polars-lazy ibis-polars {{extras}} --csv
 
 run-all:
-    just run-dataframe
-    just run-sql
+    just run-all-parquet
+    just run-all-csv
 
 # e2e
 e2e:
@@ -118,7 +120,7 @@ vm-create:
         --machine-type={{instance_type}} \
         --image=ubuntu-2004-focal-v20240519 \
         --image-project=ubuntu-os-cloud \
-        --boot-disk-size=1000GB \
+        --boot-disk-size=2000GB \
         --boot-disk-type=pd-ssd
 
 vm-ssh:

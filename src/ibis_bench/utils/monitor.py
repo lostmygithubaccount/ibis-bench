@@ -2,7 +2,6 @@ import os
 import json
 import time
 import uuid
-import gcsfs
 import psutil
 import tracemalloc
 
@@ -27,6 +26,7 @@ def monitor_it(
     system: str,
     session_id: str,
     instance_type: str,
+    use_csv: bool,
     *args,
     **kwargs,
 ):
@@ -66,6 +66,7 @@ def monitor_it(
         "n_partitions": n_partitions,
         "query_number": query_number,
         "execution_seconds": elapsed_time,
+        "file_type": "csv" if use_csv else "parquet",
         "peak_cpu": peak_cpu,
         "peak_memory": peak / 1024**3,
     }

@@ -45,16 +45,7 @@ px.defaults.template = "plotly_dark"
 con = ibis.connect("duckdb://")
 
 # cloud logs
-cloud = True
-
-
-# TODO: remove
-def get_timings_dir():
-    # dir_name = "bench_logs_v0"
-    # dir_name = "benchy_logs_v7"  # first decent laptop run w/ first 7 queries
-    dir_name = "benchy_logs_v9"  # semi-ok cloud run w/ all 22 queries
-
-    return dir_name
+cloud = False
 
 
 if cloud:
@@ -82,7 +73,7 @@ t = (
 
 
 # streamlit viz beyond this point
-cols = st.columns(4)
+cols = st.columns(6)
 with cols[0]:
     st.metric(
         label="total queries run",
@@ -90,23 +81,84 @@ with cols[0]:
     )
 with cols[1]:
     st.metric(
+        label="total queries run (parquet)",
+        value=t.filter(t["file_type"] == "parquet").count().to_pandas(),
+    )
+with cols[2]:
+    st.metric(
+        label="total queries run (csv)",
+        value=t.filter(t["file_type"] == "csv").count().to_pandas(),
+    )
+with cols[3]:
+    st.metric(
         label="total runtime minutes",
         value=round(t["execution_seconds"].sum().to_pandas() / 60, 2),
     )
-with cols[2]:
+with cols[4]:
     st.metric(
         label="total systems",
         value=t.select("system").distinct().count().to_pandas(),
     )
-with cols[3]:
+with cols[5]:
     st.metric(
         label="total queries",
         value=t.select("query_number").distinct().count().to_pandas(),
     )
 
+with st.form(key="app"):
+    # system options
+    system_options = sorted(
+        t.select("system").distinct().to_pandas()["system"].tolist()
+    )
+    system = st.multiselect(
+        "Select systems",
+        system_options,
+        default=system_options,
+    )
+
+    # instance type options
+    instance_types = sorted(
+        t.select("instance_type").distinct().to_pandas()["instance_type"].tolist()
+    )
+    instance_type = st.radio(
+        "Select an instance type",
+        instance_types,
+        index=instance_types.index("work laptop"),
+    )
+
+    # filetype options
+    filetype_options = sorted(
+        t.select("file_type").distinct().to_pandas()["file_type"].tolist()
+    )
+    file_type = st.radio(
+        "Select a file type",
+        filetype_options,
+        index=filetype_options.index("parquet"),
+    )
+
+    # query options
+    query_numbers = sorted(
+        t.select("query_number").distinct().to_pandas()["query_number"].tolist()
+    )
+    start_query, end_query = st.select_slider(
+        "Select a range of queries",
+        options=query_numbers,
+        value=(min(query_numbers), max(query_numbers)),
+    )
+
+    # submit button
+    update_button = st.form_submit_button(label="update")
+
+# parquet
+
 agg = (
-    t.filter(t["sf"] >= 2)  # TODO: change back to 1
-    .group_by("system", "sf", "n_partitions", "query_number")
+    t.filter(t["sf"] >= 1)  # TODO: change back to 1
+    .filter(t["system"].isin(system))
+    .filter(t["file_type"] == file_type)
+    .filter(t["instance_type"] == instance_type)
+    .filter(t["query_number"] >= start_query)
+    .filter(t["query_number"] <= end_query)
+    .group_by("system", "sf", "query_number")
     .agg(
         mean_execution_seconds=t["execution_seconds"].mean(),
         max_peak_cpu=t["peak_cpu"].max(),
@@ -114,7 +166,6 @@ agg = (
     )
     .order_by(
         ibis.desc("sf"),
-        ibis.asc("n_partitions"),
         ibis.asc("query_number"),
         ibis.desc("system"),
         ibis.asc("mean_execution_seconds"),
@@ -127,10 +178,9 @@ category_orders = {
         agg.select("query_number").distinct().to_pandas()["query_number"].tolist()
     ),
     "system": sorted(agg.select("system").distinct().to_pandas()["system"].tolist()),
-    "n_partitions": sorted(
-        agg.select("n_partitions").distinct().to_pandas()["n_partitions"].tolist()
-    ),
 }
+
+gb_factor = 2 / 5 if file_type == "parquet" else 11 / 10
 
 for sf in sorted(sfs):
     c = px.bar(
@@ -140,7 +190,7 @@ for sf in sorted(sfs):
         color="system",
         category_orders=category_orders,
         barmode="group",
-        pattern_shape="n_partitions",
-        title=f"scale factor: {sf} (~{sf} GB of data in memory; ~{sf*2//5}GB on disk in Parquet)",
+        # pattern_shape="n_partitions",
+        title=f"scale factor: {sf} (~{sf} GB of data in memory; ~{round(sf*gb_factor, 1)}GB on disk in {file_type})",
     )
     st.plotly_chart(c)

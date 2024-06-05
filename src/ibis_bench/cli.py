@@ -31,7 +31,7 @@ def gen_data(
         DEFAULT_N_PARTITIONS, "--n-partitions", "-n", help="number of partitions"
     ),
     csv: bool = typer.Option(
-        False, "--csv", "-c", help="generate CSV files instead of parquet"
+        False, "--csv", "-c", help="generate CSV files in addition to Parquet"
     ),
 ):
     """
@@ -44,7 +44,7 @@ def gen_data(
 
 @app.command()
 def run(
-    system: str = typer.Argument(..., help="system to run on"),
+    systems: list[str] = typer.Argument(..., help="system to run on"),
     scale_factor: list[int] = typer.Option(
         DEFAULT_SCALE_FACTORS, "--scale-factor", "-s", help="scale factors"
     ),
@@ -67,76 +67,99 @@ def run(
     """
     run tpc-h benchmarking queries
     """
-
     session_id = str(uuid.uuid4())
 
     for sf in sorted(scale_factor):
         for n in sorted(n_partitions):
-            system_parts = system.split("-")
+            for system in systems:
+                system_parts = system.split("-")
 
-            if system_parts[0] == "ibis" and system_parts[-1] != "sql":
-                backend = system_parts[1]
-                con = ibis.connect(f"{backend}://")
-                log.info(f"connected to {backend} backend")
+                if system_parts[0] == "ibis" and system_parts[-1] != "sql":
+                    backend = system_parts[1]
+                    con = ibis.connect(f"{backend}://")
+                    log.info(f"connected to {backend} backend")
 
-                from ibis_bench.queries.ibis import all_queries
+                    from ibis_bench.queries.ibis import all_queries
 
-                customer, lineitem, nation, orders, part, partsupp, region, supplier = (
-                    get_ibis_tables(sf=sf, n_partitions=n, con=con, csv=use_csv)
-                )
-            elif system_parts[0] == "ibis" and system_parts[-1] == "sql":
-                backend = system_parts[1]
-                con = ibis.connect(f"{backend}://")
-                log.info(f"connected to {backend} backend (for SQL)")
+                    (
+                        customer,
+                        lineitem,
+                        nation,
+                        orders,
+                        part,
+                        partsupp,
+                        region,
+                        supplier,
+                    ) = get_ibis_tables(sf=sf, n_partitions=n, con=con, csv=use_csv)
+                elif system_parts[0] == "ibis" and system_parts[-1] == "sql":
+                    backend = system_parts[1]
+                    con = ibis.connect(f"{backend}://")
+                    log.info(f"connected to {backend} backend (for SQL)")
 
-                from ibis_bench.queries.sql import all_queries
+                    from ibis_bench.queries.sql import all_queries
 
-                customer, lineitem, nation, orders, part, partsupp, region, supplier = (
-                    get_ibis_tables(sf=sf, n_partitions=n, con=con, csv=use_csv)
-                )
-            elif system_parts[0] == "polars":
-                backend = system_parts[0]
-                lazy = system_parts[1] == "lazy"
-                log.info(f"using Polars with lazy={lazy}")
+                    (
+                        customer,
+                        lineitem,
+                        nation,
+                        orders,
+                        part,
+                        partsupp,
+                        region,
+                        supplier,
+                    ) = get_ibis_tables(sf=sf, n_partitions=n, con=con, csv=use_csv)
+                elif system_parts[0] == "polars":
+                    backend = system_parts[0]
+                    lazy = system_parts[1] == "lazy"
+                    log.info(f"using Polars with lazy={lazy}")
 
-                from ibis_bench.queries.polars import all_queries
+                    from ibis_bench.queries.polars import all_queries
 
-                customer, lineitem, nation, orders, part, partsupp, region, supplier = (
-                    get_polars_tables(sf=sf, n_partitions=n, lazy=lazy, csv=use_csv)
-                )
+                    (
+                        customer,
+                        lineitem,
+                        nation,
+                        orders,
+                        part,
+                        partsupp,
+                        region,
+                        supplier,
+                    ) = get_polars_tables(sf=sf, n_partitions=n, lazy=lazy, csv=use_csv)
 
-            queries = {
-                q: query
-                for q, query in enumerate(all_queries, start=1)
-                if (q_number is None or q in q_number)
-                and (exclude_queries is None or q not in exclude_queries)
-            }
+                queries = {
+                    q: query
+                    for q, query in enumerate(all_queries, start=1)
+                    if (q_number is None or q in q_number)
+                    and (exclude_queries is None or q not in exclude_queries)
+                }
 
-            for q, query in queries.items():
-                try:
-                    monitor_it(
-                        query,
-                        sf=sf,
-                        n_partitions=n,
-                        query_number=q,
-                        system=system,
-                        session_id=session_id,
-                        instance_type=instance_type,
-                        # tpch tables
-                        customer=customer,
-                        lineitem=lineitem,
-                        nation=nation,
-                        orders=orders,
-                        part=part,
-                        partsupp=partsupp,
-                        region=region,
-                        supplier=supplier,
-                        dialect=backend if backend else None,
-                    )
-                except Exception as e:
-                    print(
-                        f"error running query {q} at scale factor {sf} and {n} partitions: {e}"
-                    )
+                for q, query in queries.items():
+                    try:
+                        monitor_it(
+                            query,
+                            sf=sf,
+                            n_partitions=n,
+                            query_number=q,
+                            system=system,
+                            session_id=session_id,
+                            instance_type=instance_type,
+                            use_csv=use_csv,
+                            # tpch tables
+                            customer=customer,
+                            lineitem=lineitem,
+                            nation=nation,
+                            orders=orders,
+                            part=part,
+                            partsupp=partsupp,
+                            region=region,
+                            supplier=supplier,
+                            # used for SQL runs
+                            dialect=backend if backend else None,
+                        )
+                    except Exception as e:
+                        print(
+                            f"error running query {q} at scale factor {sf} and {n} partitions: {e}"
+                        )
 
 
 if __name__ == "__main__":
