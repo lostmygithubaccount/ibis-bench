@@ -26,7 +26,6 @@ def monitor_it(
     query_number: int,
     system: str,
     session_id: str,
-    cloud_logging: bool,
     instance_type: str,
     *args,
     **kwargs,
@@ -71,22 +70,17 @@ def monitor_it(
         "peak_memory": peak / 1024**3,
     }
 
-    write_monitor_results(data, cloud_logging=cloud_logging)
+    write_monitor_results(data)
 
 
-def write_monitor_results(results, cloud_logging=False):
+def write_monitor_results(results):
     file_id = str(uuid.uuid4())
     dir_name = get_timings_dir()
 
-    if cloud_logging:
-        fs = gcsfs.GCSFileSystem()
-        file_path = f"gs://ibis-bench/{dir_name}/{file_id}.json"
-        open_fn = fs.open
-    else:
-        if not os.path.exists(dir_name):
-            os.makedirs(dir_name, exist_ok=True)
-        file_path = f"{dir_name}/{file_id}.json"
-        open_fn = open
+    if not os.path.exists(dir_name):
+        os.makedirs(dir_name, exist_ok=True)
+    file_path = f"{dir_name}/{file_id}.json"
+    open_fn = open
 
     log.info(f"\twriting monitor data to {file_path}...")
     with open_fn(file_path, "w") as f:

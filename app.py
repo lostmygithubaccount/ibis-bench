@@ -10,23 +10,26 @@ st.title("WIP Ibis benchmarking")
 details = """
 work in progress...data takes a bit to load from GCS...
 
+**DATA IS NOT FINALIZED**
+
 the purpose of this dashboard is to compare TPC-H benchmarks across the big three single-node, Apache Arrow-based, modern OLAP engines: DuckDB, DataFusion, and Polars
-
-current state is I have data from running on my M1 32GB RAM MacBook Pro, shown below
-
-**IMPORTANT**: currently showing across 3 runs a n=1, n=64, n=128 partitions. it shouldn't matter but I wanted to verify this, will drop in the future
 
 TODOs include:
 
-- [ ] add the remaining TPC-H queries
-- [ ] add DuckDB and DataFusion native
-- [ ] run on cloud VM(s) for reproducibility
-- [ ] open various issues on respective repos for bugs/improvements identified
+- [x] add the remaining TPC-H queries
+- [x] add DuckDB and DataFusion native (added via Ibis SQL)
+- [x] run on cloud VM(s) for reproducibility
+- [x] open various issues on respective repos for bugs/improvements identified
 - [ ] sanity-check and finalize CPU/memory usage data + add to visualizations
 - [ ] generally improve the visualizations; make the app more interactive
 - [ ] write up a (very easily reproduceable) blog post
 
-TPC-H data is stored locally in Parquet format. the resulting benchmark data is stored in GCS in JSON format and read in via Ibis here
+additional TODOs:
+
+- [x] add CSV
+- [ ] double-check Polars queries are up to date
+- [ ] triple-check query correctness across
+- [ ] final benchmarking on laptop(s) + VM(s)
 """
 details = details.strip()
 st.markdown(details)
@@ -47,13 +50,15 @@ cloud = True
 
 # TODO: remove
 def get_timings_dir():
-    dir_name = "benchy_logs_v9"
+    # dir_name = "bench_logs_v0"
+    dir_name = "benchy_logs_v8"
 
     return dir_name
 
 
 if cloud:
     PROJECT = "voltrondata-demo"
+    # BUCKET = "ibis-bench"
     BUCKET = "ibis-benchy"
 
     fs = gcsfs.GCSFileSystem(project=PROJECT)
