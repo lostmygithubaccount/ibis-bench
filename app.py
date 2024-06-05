@@ -51,8 +51,8 @@ cloud = True
 # TODO: remove
 def get_timings_dir():
     # dir_name = "bench_logs_v0"
-    dir_name = "benchy_logs_v7"  # first decent laptop run
-    # dir_name = "benchy_logs_v9" # semi-ok cloud run
+    # dir_name = "benchy_logs_v7"  # first decent laptop run w/ first 7 queries
+    dir_name = "benchy_logs_v9" # semi-ok cloud run w/ all 22 queries
 
     return dir_name
 
