@@ -55,6 +55,16 @@ clean-logs:
     @rm -r bench_logs_* || True
     @rm -r bench_cli_logs || True
 
+# clean results
+clean-results:
+    @rm -r results_data || True
+
+# clean all
+clean-all:
+    just clean
+    just clean-logs
+    just clean-results
+
 # app
 app:
     @streamlit run app.py
