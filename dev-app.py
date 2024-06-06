@@ -3,7 +3,7 @@ import gcsfs
 import streamlit as st
 import plotly.express as px
 
-from ibis_bench.utils.monitor import get_timings_dir
+from ibis_bench.utils.monitor import get_timings_dir, get_cache_dir, get_raw_json_dir  # noqa
 
 st.set_page_config(layout="wide")
 st.title("WIP Ibis benchmarking")
@@ -57,15 +57,15 @@ if cloud:
 
     con.register_filesystem(fs)
 
-    json_glob = f"gs://{BUCKET}/{get_timings_dir()}/*.json"
+    glob = f"gs://{BUCKET}/{get_cache_dir()}/*.parquet"
 else:
-    json_glob = f"{get_timings_dir()}/*.json"
+    glob = f"{get_cache_dir()}/*.parquet"
 
 
 # read data
 if "cache" not in con.list_tables():
     t = (
-        con.read_json(json_glob, ignore_errors=True)
+        con.read_parquet(glob)
         .mutate(
             timestamp=ibis._["timestamp"].cast("timestamp"),
         )
@@ -186,8 +186,6 @@ category_orders = {
     "system": sorted(agg.select("system").distinct().to_pandas()["system"].tolist()),
 }
 
-gb_factor = 2 / 5 if file_type == "parquet" else 11 / 10
-
 for sf in sorted(sfs):
     c = px.bar(
         agg.filter(agg["sf"] == sf),
@@ -197,6 +195,6 @@ for sf in sorted(sfs):
         category_orders=category_orders,
         barmode="group",
         pattern_shape="file_type",
-        title=f"scale factor: {sf} (~{sf} GB of data in memory; ~{round(sf*gb_factor, 1)}GB on disk in {file_type})",
+        title=f"scale factor: {sf} (~{sf}GB in memory; ~{round(sf * 2/5, 2)}GB as Parquet; ~{round(sf * 11/10, 2)}GB as CSV)",
     )
     st.plotly_chart(c)

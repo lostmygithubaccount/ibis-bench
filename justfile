@@ -4,13 +4,15 @@
 set dotenv-load
 
 # variables
-extras := "-s 1"
-#extras := "-s 1 -s 10 -s 20 -s 40 -s 50 -s 100 -s 150 -s 200"
 all_systems := "ibis-duckdb ibis-duckdb-sql ibis-datafusion ibis-datafusion-sql polars-lazy ibis-polars"
 
-instance_type := "work laptop"
+#extras := "-s 1"
+#extras := "-s 1 -s 10 -s 20 -s 40 -s 50 -s 100 -s 150 -s 200"
+extras := "-s 1 -s 8 -s 16 -s 32 -s 64 -s 128" 
+
+# instance_type := "work laptop"
 # instance_type := "personal laptop"
-# instance_type := "c3-highcpu-22"
+instance_type := "c3-highcpu-22"
 # instance_type := "c3d-highmem-16"
 # instance_type := "c3-highmem-88"
 
@@ -101,24 +103,29 @@ run-all:
     just run-all-parquet
     just run-all-csv
 
+# cache json to parquet
+cache:
+    @bench cache-json
+
 # e2e
 e2e:
-    just data-download
+    just tpch-download
     just run-all
+    just cache
+    just logs-upload
 
 # upload tpch data
-data-upload:
+tpch-upload:
     gsutil -m cp -r tpch_data gs://ibis-bench-tpch
 
 # download tpch data
-data-download:
+tpch-download:
     mkdir -p tpch_data
     gsutil -m cp -r gs://ibis-bench-tpch/tpch_data .
 
 # uplaod log data
 logs-upload:
-    gsutil -m cp -r bench_logs_*/*.parquet gs://ibis-bench
-    gsutil -m cp -r bench_cli_logs gs://ibis-bench
+    gsutil -m cp -r bench_logs_* gs://ibis-bench
 
 # create vm
 vm-create:
