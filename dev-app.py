@@ -190,6 +190,8 @@ category_orders = {
     "system": sorted(agg.select("system").distinct().to_pandas()["system"].tolist()),
 }
 
+gb_factor = 2 / 5 if file_type == "parquet" else 11 / 10
+
 for sf in sorted(sfs):
     st.markdown(f"## scale factor: {sf}")
     c = px.bar(
@@ -200,7 +202,7 @@ for sf in sorted(sfs):
         category_orders=category_orders,
         barmode="group",
         # pattern_shape="file_type",
-        title=f"scale factor: {sf} (~{sf}GB in memory; ~{round(sf * 2/5, 2)}GB as Parquet; ~{round(sf * 11/10, 2)}GB as CSV)",
+        title=f"scale factor: {sf} (~{sf}GB in memory | ~{round(sf * gb_factor, 2)}GB as {file_type})",
     )
     st.plotly_chart(c)
 

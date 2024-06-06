@@ -13,9 +13,9 @@ extras := "-s 1 -s 8 -s 16 -s 32 -s 64 -s 128"
 # instance_type := "work laptop"
 # instance_type := "personal laptop"
 #instance_type := "c3-highcpu-22"
-instance_type := "c3-highmem-22"
+#instance_type := "c4-highmem-22"
 # instance_type := "c3-highmem-88"
-# instance_type := "c3d-highmem-16"
+instance_type := "c3d-highcpu-30"
 
 # aliases
 alias fmt:=format
