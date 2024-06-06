@@ -22,16 +22,25 @@ def write_results(
             f"\twriting ibis result to {os.path.join(dirname, f'q_{q_number}.parquet')}..."
         )
         res.to_parquet(os.path.join(dirname, f"q_{q_number}.parquet"))
+        log.info(
+            f"\tdone writing ibis result to {os.path.join(dirname, f'q_{q_number}.parquet')}..."
+        )
     elif isinstance(res, pl.DataFrame):
         log.info(
             f"\twriting polars (eager) result to {os.path.join(dirname, f'q_{q_number}.parquet')}..."
         )
         res.write_parquet(os.path.join(dirname, f"q_{q_number}.parquet"))
+        log.info(
+            f"\tdone writing polars (eager) result to {os.path.join(dirname, f'q_{q_number}.parquet')}..."
+        )
     elif isinstance(res, pl.LazyFrame):
         log.info(
             f"\twriting polars (lazy) result to {os.path.join(dirname, f'q_{q_number}.parquet')}..."
         )
         res.collect().write_parquet(os.path.join(dirname, f"q_{q_number}.parquet"))
+        log.info(
+            f"\tdone writing polars (lazy) result to {os.path.join(dirname, f'q_{q_number}.parquet')}..."
+        )
 
         # NOTE: sinking parquet caused multiple issues, including: https://github.com/pola-rs/polars/issues/16694
         # for now, we'll just use collect + write_parquet and revisit later when the streaming engine is redone

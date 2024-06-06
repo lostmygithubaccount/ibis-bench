@@ -5,7 +5,7 @@ import logging as log
 from datetime import datetime
 
 # TODO: this is all very hacky
-file_logging = True
+file_logging = False
 log_name = str(datetime.now().strftime("%Y-%m-%d:%s"))
 
 dir_name = "bench_cli_logs"

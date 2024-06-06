@@ -42,16 +42,16 @@ ibis.options.repr.interactive.max_columns = None
 px.defaults.template = "plotly_dark"
 
 # ibis connection
-con = ibis.connect("duckdb://")
+con = ibis.connect("duckdb://app.ddb")
 
 # cloud logs
-cloud = False
+cloud = True
 
 
 if cloud:
     PROJECT = "voltrondata-demo"
-    # BUCKET = "ibis-bench"
-    BUCKET = "ibis-benchy"
+    BUCKET = "ibis-bench"
+    # BUCKET = "ibis-benchy"
 
     fs = gcsfs.GCSFileSystem(project=PROJECT)
 
@@ -63,13 +63,17 @@ else:
 
 
 # read data
-t = (
-    con.read_json(json_glob, ignore_errors=True)
-    .mutate(
-        timestamp=ibis._["timestamp"].cast("timestamp"),
+if "cache" not in con.list_tables():
+    t = (
+        con.read_json(json_glob, ignore_errors=True)
+        .mutate(
+            timestamp=ibis._["timestamp"].cast("timestamp"),
+        )
+        .cache()
     )
-    .cache()
-)
+    con.create_table("cache", t)
+else:
+    t = con.table("cache")
 
 
 # streamlit viz beyond this point
@@ -116,6 +120,16 @@ with st.form(key="app"):
         default=system_options,
     )
 
+    # filetype options
+    filetype_options = sorted(
+        t.select("file_type").distinct().to_pandas()["file_type"].tolist()
+    )
+    file_type = st.multiselect(
+        "Select a file type",
+        filetype_options,
+        default=filetype_options,
+    )
+
     # instance type options
     instance_types = sorted(
         t.select("instance_type").distinct().to_pandas()["instance_type"].tolist()
@@ -123,17 +137,7 @@ with st.form(key="app"):
     instance_type = st.radio(
         "Select an instance type",
         instance_types,
-        index=instance_types.index("work laptop"),
-    )
-
-    # filetype options
-    filetype_options = sorted(
-        t.select("file_type").distinct().to_pandas()["file_type"].tolist()
-    )
-    file_type = st.radio(
-        "Select a file type",
-        filetype_options,
-        index=filetype_options.index("parquet"),
+        # index=instance_types.index("work laptop"),
     )
 
     # query options
@@ -154,11 +158,12 @@ with st.form(key="app"):
 agg = (
     t.filter(t["sf"] >= 1)  # TODO: change back to 1
     .filter(t["system"].isin(system))
-    .filter(t["file_type"] == file_type)
+    .filter(t["file_type"].isin(file_type))
+    # .filter(t["file_type"] == file_type)
     .filter(t["instance_type"] == instance_type)
     .filter(t["query_number"] >= start_query)
     .filter(t["query_number"] <= end_query)
-    .group_by("system", "sf", "query_number")
+    .group_by("system", "sf", "query_number", "file_type")
     .agg(
         mean_execution_seconds=t["execution_seconds"].mean(),
         max_peak_cpu=t["peak_cpu"].max(),
@@ -169,6 +174,7 @@ agg = (
         ibis.asc("query_number"),
         ibis.desc("system"),
         ibis.asc("mean_execution_seconds"),
+        ibis.asc("file_type"),
     )
 )
 
@@ -190,7 +196,7 @@ for sf in sorted(sfs):
         color="system",
         category_orders=category_orders,
         barmode="group",
-        # pattern_shape="n_partitions",
+        pattern_shape="file_type",
         title=f"scale factor: {sf} (~{sf} GB of data in memory; ~{round(sf*gb_factor, 1)}GB on disk in {file_type})",
     )
     st.plotly_chart(c)

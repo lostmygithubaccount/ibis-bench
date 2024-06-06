@@ -2,6 +2,9 @@
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.hatch.metadata]
+allow-direct-references = true
+
 [project]
 name = "ibis-bench"
 version = "0.1.0"
@@ -18,7 +21,7 @@ dependencies = [
     'duckdb==0.10.3',
     'datafusion==38.0.1',
     'polars==0.20.31',
-    'ibis-framework',
+    'ibis-framework @ git+https://github.com/ibis-project/ibis',
     'typer',
     'python-dotenv',
     'psutil',

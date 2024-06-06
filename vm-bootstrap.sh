@@ -21,14 +21,14 @@ echo 'alias pip=pip3.11' >> $HOME/.bashrc
 echo 'alias top=btop' >> $HOME/.bashrc
 
 # source
-source $HOME/.bashrc
+# source $HOME/.bashrc
 # 
 # # clone ibis-bench
 ## git clone https://github.com/lostmygithubaccount/ibis-bench
 # cd ibis-bench
 # 
 # # python installs
-pip install -e .
+# pip install -e .
 # 
 # # run
 # just run

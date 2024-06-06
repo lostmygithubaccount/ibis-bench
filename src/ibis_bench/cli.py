@@ -1,14 +1,11 @@
 import ibis
 import uuid
 import typer
-import warnings
 
 from ibis_bench.utils.logging import log
-from ibis_bench.utils.monitor import monitor_it
+from ibis_bench.utils.monitor import monitor_it, jsons_to_parquet
 from ibis_bench.utils.gen_data import generate_data
 from ibis_bench.utils.read_data import get_ibis_tables, get_polars_tables
-
-warnings.filterwarnings("ignore")  # YOLO
 
 DEFAULT_SCALE_FACTORS = [1]
 DEFAULT_N_PARTITIONS = [1]
@@ -160,6 +157,14 @@ def run(
                         print(
                             f"error running query {q} at scale factor {sf} and {n} partitions: {e}"
                         )
+
+
+@app.command()
+def cache_json():
+    """
+    cache JSON files as Parquet
+    """
+    jsons_to_parquet()
 
 
 if __name__ == "__main__":

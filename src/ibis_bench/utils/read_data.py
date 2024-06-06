@@ -96,7 +96,7 @@ def get_polars_tables(sf, n_partitions, lazy=True, csv: bool = False):
     os.environ["POLARS_ACTIVATE_DECIMAL"] = (
         "1"  # https://github.com/pola-rs/polars/issues/16603#issuecomment-2141701041
     )
-    data_directory = get_data_dir(sf, n_partitions)
+    data_directory = get_data_dir(sf, n_partitions, csv=csv)
 
     if not csv:
         if lazy:

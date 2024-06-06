@@ -4,14 +4,15 @@
 set dotenv-load
 
 # variables
-extras := "-s 1 -s 10 -s 20 -s 40 -s 50 -s 40 -s 50 -s 100"
+extras := "-s 1"
 #extras := "-s 1 -s 10 -s 20 -s 40 -s 50 -s 100 -s 150 -s 200"
+all_systems := "ibis-duckdb ibis-duckdb-sql ibis-datafusion ibis-datafusion-sql polars-lazy ibis-polars"
 
-# instance_type := "work laptop"
+instance_type := "work laptop"
 # instance_type := "personal laptop"
 # instance_type := "c3-highcpu-22"
 # instance_type := "c3d-highmem-16"
-instance_type := "c3-highmem-88"
+# instance_type := "c3-highmem-88"
 
 # aliases
 alias fmt:=format
@@ -32,7 +33,7 @@ setup:
 
 # install
 install:
-    @pip install -e . --reinstall-package ibis_bench
+    @pip install -e .
 
 # format
 format:
@@ -87,12 +88,15 @@ gen-data:
 run *args:
     @bench run {{args}} -i "{{instance_type}}"
 
+# run all parquet queries
 run-all-parquet:
-    just run ibis-duckdb ibis-duckdb-sql ibis-datafusion ibis-datafusion-sql polars-lazy ibis-polars {{extras}}
+    just run {{all_systems}} {{extras}}
 
+# run all csv queries
 run-all-csv:
-    just run ibis-duckdb ibis-duckdb-sql ibis-datafusion ibis-datafusion-sql polars-lazy ibis-polars {{extras}} --csv
+    just run {{all_systems}} {{extras}} --csv
 
+# run all queries
 run-all:
     just run-all-parquet
     just run-all-csv
@@ -100,42 +104,50 @@ run-all:
 # e2e
 e2e:
     just data-download
-    just run
+    just run-all
 
-# cloud shenanigans
+# upload tpch data
 data-upload:
     gsutil -m cp -r tpch_data gs://ibis-bench-tpch
 
+# download tpch data
 data-download:
     mkdir -p tpch_data
     gsutil -m cp -r gs://ibis-bench-tpch/tpch_data .
 
+# uplaod log data
 logs-upload:
-    gsutil -m cp -r bench_logs_* gs://ibis-bench
+    gsutil -m cp -r bench_logs_*/*.parquet gs://ibis-bench
     gsutil -m cp -r bench_cli_logs gs://ibis-bench
 
+# create vm
 vm-create:
     gcloud compute instances create ibis-bench \
         --zone=us-central1-b \
         --machine-type={{instance_type}} \
         --image=ubuntu-2004-focal-v20240519 \
         --image-project=ubuntu-os-cloud \
-        --boot-disk-size=2000GB \
+        --boot-disk-size=1000GB \
         --boot-disk-type=pd-ssd
 
+# ssh into vm
 vm-ssh:
     gcloud compute ssh ibis-bench --zone=us-central1-b --tunnel-through-iap
 
+# suspend vm
 vm-suspend:
     gcloud compute instances stop ibis-bench --zone=us-central1-b
 
+# resume vm
 vm-resume:
     gcloud compute instances start ibis-bench --zone=us-central1-b
 
+# delete vm
 vm-delete:
     gcloud compute instances delete ibis-bench --zone=us-central1-b
 
-vm-run:
-    gcloud compute ssh ibis-bench --zone=us-central1-b --tunnel-through-iap -- bash -s < vm-bootstrap.sh
+# run on VM
+#vm-run:
+#    gcloud compute ssh ibis-bench --zone=us-central1-b --tunnel-through-iap -- bash -s < vm-bootstrap.sh
 
 # gcloud compute ssh ibis-bench --zone=us-central1-b --tunnel-through-iap --command "just e2e &"

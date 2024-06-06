@@ -1,4 +1,5 @@
 import os
+import ibis
 import json
 import time
 import uuid
@@ -12,8 +13,29 @@ from ibis_bench.utils.write_data import write_results
 
 
 def get_timings_dir():
-    dir_name = "bench_logs_v0"
+    dir_name = "bench_logs_v1"
     # dir_name = "bench_logs_temp"
+
+    if not os.path.exists(dir_name):
+        os.makedirs(dir_name)
+
+    return dir_name
+
+
+def get_raw_json_dir():
+    dir_name = os.path.join(get_timings_dir(), "raw_json")
+
+    if not os.path.exists(dir_name):
+        os.makedirs(dir_name)
+
+    return dir_name
+
+
+def get_cache_dir():
+    dir_name = os.path.join(get_timings_dir(), "cache")
+
+    if not os.path.exists(dir_name):
+        os.makedirs(dir_name)
 
     return dir_name
 
@@ -76,14 +98,22 @@ def monitor_it(
 
 def write_monitor_results(results):
     file_id = str(uuid.uuid4())
-    dir_name = get_timings_dir()
-
-    if not os.path.exists(dir_name):
-        os.makedirs(dir_name, exist_ok=True)
-    file_path = f"{dir_name}/{file_id}.json"
-    open_fn = open
+    file_path = os.path.join(get_raw_json_dir(), f"file_id={file_id}.json")
 
     log.info(f"\twriting monitor data to {file_path}...")
-    with open_fn(file_path, "w") as f:
+    with open(file_path, "w") as f:
         json.dump(results, f)
+    log.info(f"\tdone writing monitor data to {file_path}...")
+
+
+def jsons_to_parquet():
+    file_id = str(uuid.uuid4())
+
+    con = ibis.connect("duckdb://")
+    t = con.read_json(f"{get_raw_json_dir()}/file_id=*.json")
+
+    file_path = os.path.join(get_cache_dir(), f"file_id={file_id}.parquet")
+
+    log.info(f"\twriting monitor data to {file_path}...")
+    t.to_parquet(file_path)
     log.info(f"\tdone writing monitor data to {file_path}...")
