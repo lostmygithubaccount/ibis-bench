@@ -14,11 +14,17 @@ eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 brew install python@3.11
 brew install just
 brew install btop
+brew install tree
 
 # aliases
 echo 'alias python=python3.11' >> $HOME/.bashrc
 echo 'alias pip=pip3.11' >> $HOME/.bashrc
 echo 'alias top=btop' >> $HOME/.bashrc
+echo 'alias du=du -h -d1' >> $HOME/.bashrc
+echo 'alias ..=cd ..' >> $HOME/.bashrc
+echo 'alias ...=cd ../..' >> $HOME/.bashrc
+echo 'alias ls="ls -1phG -a"' >> $HOME/.bashrc
+echo 'alias lsl="ls -l"' >> $HOME/.bashrc
 
 # source
 # source $HOME/.bashrc

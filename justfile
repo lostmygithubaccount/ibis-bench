@@ -12,9 +12,10 @@ extras := "-s 1 -s 8 -s 16 -s 32 -s 64 -s 128"
 
 # instance_type := "work laptop"
 # instance_type := "personal laptop"
-instance_type := "c3-highcpu-22"
-# instance_type := "c3d-highmem-16"
+#instance_type := "c3-highcpu-22"
+instance_type := "c3-highmem-22"
 # instance_type := "c3-highmem-88"
+# instance_type := "c3d-highmem-16"
 
 # aliases
 alias fmt:=format
@@ -53,21 +54,26 @@ release:
 
 # clean
 clean:
-    @rm -r dist || True
+    @rm -rf dist
 
 # clean logs
 clean-logs:
-    @rm -r bench_logs_* || True
-    @rm -r bench_cli_logs || True
+    @rm -rf bench_logs_*
+    @rm -rf bench_cli_logs
 
 # clean results
 clean-results:
-    @rm -r results_data || True
+    @rm -rf results_data
+
+# clean app
+clean-app:
+    @rm -rf app.ddb*
 
 # clean all
 clean-all:
     just clean
     just clean-logs
+    just clean-app
     just clean-results
 
 # app
@@ -92,36 +98,29 @@ run *args:
 
 # run all parquet queries
 run-all-parquet:
-    just run {{all_systems}} {{extras}}
+    nohup just run {{all_systems}} {{extras}} | tee out.log &
 
 # run all csv queries
 run-all-csv:
-    just run {{all_systems}} {{extras}} --csv
-
-# run all queries
-run-all:
-    just run-all-parquet
-    just run-all-csv
+    nohup just run {{all_systems}} {{extras}} --csv | tee out.log &
 
 # cache json to parquet
 cache:
     @bench cache-json
 
-# e2e
-e2e:
-    just tpch-download
-    just run-all
-    just cache
-    just logs-upload
-
 # upload tpch data
 tpch-upload:
     gsutil -m cp -r tpch_data gs://ibis-bench-tpch
 
-# download tpch data
-tpch-download:
-    mkdir -p tpch_data
-    gsutil -m cp -r gs://ibis-bench-tpch/tpch_data .
+# download tpch CSV data
+tpch-download-csv:
+    mkdir -p tpch_data/csv
+    gsutil -m cp -r gs://ibis-bench-tpch/tpch_data/csv tpch_data
+
+# download tpch Parquet data
+tpch-download-parquet:
+    mkdir -p tpch_data/parquet
+    gsutil -m cp -r gs://ibis-bench-tpch/tpch_data/parquet tpch_data
 
 # uplaod log data
 logs-upload:

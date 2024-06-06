@@ -18,10 +18,12 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    'duckdb==0.10.3',
-    'datafusion==38.0.1',
+    # data stuff
+    'duckdb==1.0.0',
     'polars==0.20.31',
+    'datafusion==38.0.1',
     'ibis-framework @ git+https://github.com/ibis-project/ibis',
+    # other stuff
     'typer',
     'python-dotenv',
     'psutil',
