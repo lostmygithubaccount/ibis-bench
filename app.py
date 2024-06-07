@@ -229,7 +229,7 @@ for sf in sorted(sfs):
     )
     all_queries = range(start_query, end_query + 1)
 
-    tabs = st.tabs(instance_types)
+    tabs = st.tabs(sorted(instance_types))
 
     for i in range(len(tabs)):
         with tabs[i]:
