@@ -137,6 +137,14 @@ with st.form(key="app"):
         default=system_options,
     )
 
+    # sfs options
+    sfs = sorted(t.select("sf").distinct().to_pandas()["sf"].tolist())
+    scale_factors = st.multiselect(
+        "select scale factor(s)",
+        sfs,
+        default=sfs,
+    )
+
     # instance type options
     instance_type_options = sorted(
         t.select("instance_type").distinct().to_pandas()["instance_type"].tolist()
@@ -175,6 +183,7 @@ with st.form(key="app"):
 # aggregate data
 agg = (
     t.filter(t["sf"] >= 1)  # TODO: change back to 1
+    .filter(t["sf"].isin(scale_factors))
     .filter(t["system"].isin(systems))
     # .filter(t["file_type"].isin(file_type))
     .filter(t["file_type"] == file_type)
