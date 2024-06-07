@@ -197,10 +197,12 @@ agg = (
     )
 )
 
+all_systems = sorted(t.select("system").distinct().to_pandas()["system"].tolist())
+
 sfs = agg.select("sf").distinct().to_pandas()["sf"].tolist()
 category_orders = {
     "query_number": sorted(query_numbers),
-    "system": sorted(systems),
+    "system": sorted(all_systems),
     "instance_type": sorted(instance_types),
 }
 
