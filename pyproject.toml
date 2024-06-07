@@ -38,6 +38,7 @@ dependencies = [
 
 [project.scripts]
 bench = "ibis_bench.cli:app"
+bench2 = "ibis_bench.cli2:app"
 
 [tool.ruff]
 extend-include = ["*.ipynb"]

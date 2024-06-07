@@ -1,10 +1,9 @@
 import ibis
 import uuid
 import typer
-import subprocess
 
 from ibis_bench.utils.logging import log
-from ibis_bench.utils.monitor import monitor_it, jsons_to_parquet
+from ibis_bench.utils.monitor import monitor_it
 from ibis_bench.utils.gen_data import generate_data
 from ibis_bench.utils.read_data import get_ibis_tables, get_polars_tables
 
@@ -22,7 +21,7 @@ app = typer.Typer(help="ibis-bench", **TYPER_KWARGS)
 
 @app.command()
 def gen_data(
-    scale_factor: list[int] = typer.Option(
+    scale_factors: list[int] = typer.Option(
         DEFAULT_SCALE_FACTORS, "--scale-factor", "-s", help="scale factors"
     ),
     n_partitions: list[int] = typer.Option(
@@ -35,7 +34,7 @@ def gen_data(
     """
     generate tpc-h benchmarking data
     """
-    for sf in sorted(scale_factor):
+    for sf in sorted(scale_factors):
         for n in sorted(n_partitions):
             generate_data(sf, n, csv=csv)
 
@@ -43,7 +42,7 @@ def gen_data(
 @app.command()
 def run(
     systems: list[str] = typer.Argument(..., help="system to run on"),
-    scale_factor: list[int] = typer.Option(
+    scale_factors: list[int] = typer.Option(
         DEFAULT_SCALE_FACTORS, "--scale-factor", "-s", help="scale factors"
     ),
     n_partitions: list[int] = typer.Option(
@@ -67,7 +66,7 @@ def run(
     """
     session_id = str(uuid.uuid4())
 
-    for sf in sorted(scale_factor):
+    for sf in sorted(scale_factors):
         for n in sorted(n_partitions):
             for system in systems:
                 system_parts = system.split("-")
@@ -158,52 +157,6 @@ def run(
                         log.info(
                             f"error running query {q} at scale factor {sf} and {n} partitions: {e}"
                         )
-
-
-# TODO: hmmmm
-@app.command()
-def run_all():
-    """
-    default run all
-    """
-    instance_type = "work laptop"
-    all_systems = [
-        "ibis-duckdb",
-        "ibis-duckdb-sql",
-        "ibis-datafusion",
-        "ibis-datafusion-sql",
-        "polars-lazy",
-        "ibis-polars",
-    ]
-    all_sfs = [
-        1,
-        8,
-        16,
-        32,
-        64,
-        128,
-    ]
-    all_qs = range(1, 23)
-
-    for sf in all_sfs:
-        for system in all_systems:
-            for q in all_qs:
-                cmd = f"bench run {system} -s {sf} -q {q} -i '{instance_type}'"
-
-                log.info(f"running: {cmd}")
-                res = subprocess.run(cmd, shell=True)
-                if res.returncode != 0:
-                    log.info(f"failed to run: {cmd}")
-
-                log.info(f"finished running: {cmd}")
-
-
-@app.command()
-def cache_json():
-    """
-    cache JSON files as Parquet
-    """
-    jsons_to_parquet()
 
 
 if __name__ == "__main__":
