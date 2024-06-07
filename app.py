@@ -34,20 +34,12 @@ the purpose of this dashboard is to compare TPC-H benchmarks across the big thre
 
 TODOs include:
 
-- [x] add the remaining TPC-H queries
-- [x] add DuckDB and DataFusion native (added via Ibis SQL)
-- [x] run on cloud VM(s) for reproducibility
-- [x] open various issues on respective repos for bugs/improvements identified
-- [ ] sanity-check and finalize CPU/memory usage data + add to visualizations
-- [ ] generally improve the visualizations; make the app more interactive
+- [ ] finalize CPU/memory usage data + add to visualizations
+- [ ] ensure Polars queries are up to date
+- [ ] double-check query correctness across
+- [ ] code cleanup
+- [ ] final runs across laptop(s), VMs, file types (Parquet, CSV)
 - [ ] write up a (very easily reproduceable) blog post
-
-additional TODOs:
-
-- [x] add CSV
-- [ ] double-check Polars queries are up to date
-- [ ] triple-check query correctness across
-- [ ] final benchmarking on laptop(s) + VM(s)
 """
 details = details.strip()
 st.markdown(details)
