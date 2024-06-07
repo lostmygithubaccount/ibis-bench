@@ -227,14 +227,7 @@ for sf in sorted(sfs):
         .to_pandas()["system"]
         .tolist()
     )
-
-    all_queries = sorted(
-        t.filter(t["sf"] == sf)
-        .select("query_number")
-        .distinct()
-        .to_pandas()["query_number"]
-        .tolist()
-    )
+    all_queries = range(start_query, end_query + 1)
 
     tabs = st.tabs(instance_types)
 
