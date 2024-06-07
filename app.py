@@ -3,7 +3,7 @@ import gcsfs
 import streamlit as st
 import plotly.express as px
 
-from ibis_bench.utils.monitor import get_timings_dir
+from ibis_bench.utils.monitor import get_timings_dir, get_cache_dir, get_raw_json_dir  # noqa
 
 st.set_page_config(layout="wide")
 st.title("WIP Ibis benchmarking")
@@ -42,47 +42,42 @@ ibis.options.repr.interactive.max_columns = None
 px.defaults.template = "plotly_dark"
 
 # ibis connection
-con = ibis.connect("duckdb://")
+con = ibis.connect("duckdb://app.ddb")
 
 # cloud logs
 cloud = True
 
-
-# TODO: remove
-def get_timings_dir():
-    # dir_name = "bench_logs_v0"
-    # dir_name = "benchy_logs_v7"  # first decent laptop run w/ first 7 queries
-    dir_name = "benchy_logs_v9"  # semi-ok cloud run w/ all 22 queries
-
-    return dir_name
-
-
 if cloud:
     PROJECT = "voltrondata-demo"
-    # BUCKET = "ibis-bench"
-    BUCKET = "ibis-benchy"
+    BUCKET = "ibis-bench"
+    # BUCKET = "ibis-benchy"
 
     fs = gcsfs.GCSFileSystem(project=PROJECT)
 
     con.register_filesystem(fs)
 
-    json_glob = f"gs://{BUCKET}/{get_timings_dir()}/*.json"
+    glob = f"gs://{BUCKET}/{get_cache_dir()}/*.parquet"
 else:
-    json_glob = f"{get_timings_dir()}/*.json"
-
+    glob = f"{get_cache_dir()}/*.parquet"
 
 # read data
-t = (
-    con.read_json(json_glob, ignore_errors=True)
-    .mutate(
-        timestamp=ibis._["timestamp"].cast("timestamp"),
+if "timings" not in con.list_tables():
+    t = (
+        con.read_parquet(glob)
+        .mutate(
+            timestamp=ibis._["timestamp"].cast("timestamp"),
+        )
+        .drop("file_id")
+        .distinct()  # TODO: hmmmmmm
+        .filter(ibis._["file_type"] == "parquet")  # TODO: remove after CSV runs
+        .cache()
     )
-    .cache()
-)
-
+    con.create_table("timings", t)
+else:
+    t = con.table("timings")
 
 # streamlit viz beyond this point
-cols = st.columns(4)
+cols = st.columns(6)
 with cols[0]:
     st.metric(
         label="total queries run",
@@ -90,23 +85,94 @@ with cols[0]:
     )
 with cols[1]:
     st.metric(
+        label="total queries run (parquet)",
+        value=t.filter(t["file_type"] == "parquet").count().to_pandas(),
+    )
+with cols[2]:
+    st.metric(
+        label="total queries run (csv)",
+        value=t.filter(t["file_type"] == "csv").count().to_pandas(),
+    )
+with cols[3]:
+    st.metric(
         label="total runtime minutes",
         value=round(t["execution_seconds"].sum().to_pandas() / 60, 2),
     )
-with cols[2]:
+with cols[4]:
     st.metric(
         label="total systems",
         value=t.select("system").distinct().count().to_pandas(),
     )
-with cols[3]:
+with cols[5]:
     st.metric(
         label="total queries",
         value=t.select("query_number").distinct().count().to_pandas(),
     )
 
+with st.form(key="app"):
+    # system options
+    system_options = sorted(
+        t.select("system").distinct().to_pandas()["system"].tolist()
+    )
+    system = st.multiselect(
+        "select system(s)",
+        system_options,
+        default=system_options,
+    )
+
+    # filetype options
+    filetype_options = sorted(
+        t.select("file_type").distinct().to_pandas()["file_type"].tolist()
+    )
+    # file_type = st.multiselect(
+    #    "select a file types",
+    #    filetype_options,
+    #    default=[filetype_options[filetype_options.index("parquet")]]
+    #    if "parquet" in filetype_options
+    #    else 0,
+    # )
+    file_type = st.radio(
+        "select file type",
+        filetype_options,
+        index=filetype_options.index("parquet") if "parquet" in filetype_options else 0,
+    )
+
+    # instance type options
+    instance_types = sorted(
+        t.select("instance_type").distinct().to_pandas()["instance_type"].tolist()
+    )
+    instance_type = st.radio(
+        "select instance type",
+        instance_types,
+        # index=instance_types.index("work laptop"),
+        index=instance_types.index("work laptop")
+        if "work laptop" in instance_types
+        else 0,
+    )
+
+    # query options
+    query_numbers = sorted(
+        t.select("query_number").distinct().to_pandas()["query_number"].tolist()
+    )
+    start_query, end_query = st.select_slider(
+        "select a range of queries",
+        options=query_numbers,
+        value=(min(query_numbers), max(query_numbers)),
+    )
+
+    # submit button
+    update_button = st.form_submit_button(label="update")
+
+# aggregate data
 agg = (
-    t.filter(t["sf"] >= 2)  # TODO: change back to 1
-    .group_by("system", "sf", "n_partitions", "query_number")
+    t.filter(t["sf"] >= 1)  # TODO: change back to 1
+    .filter(t["system"].isin(system))
+    # .filter(t["file_type"].isin(file_type))
+    .filter(t["file_type"] == file_type)
+    .filter(t["instance_type"] == instance_type)
+    .filter(t["query_number"] >= start_query)
+    .filter(t["query_number"] <= end_query)
+    .group_by("system", "sf", "query_number")  # , "file_type")
     .agg(
         mean_execution_seconds=t["execution_seconds"].mean(),
         max_peak_cpu=t["peak_cpu"].max(),
@@ -114,10 +180,10 @@ agg = (
     )
     .order_by(
         ibis.desc("sf"),
-        ibis.asc("n_partitions"),
         ibis.asc("query_number"),
         ibis.desc("system"),
         ibis.asc("mean_execution_seconds"),
+        # ibis.asc("file_type"),
     )
 )
 
@@ -127,12 +193,12 @@ category_orders = {
         agg.select("query_number").distinct().to_pandas()["query_number"].tolist()
     ),
     "system": sorted(agg.select("system").distinct().to_pandas()["system"].tolist()),
-    "n_partitions": sorted(
-        agg.select("n_partitions").distinct().to_pandas()["n_partitions"].tolist()
-    ),
 }
 
+gb_factor = 2 / 5 if file_type == "parquet" else 11 / 10
+
 for sf in sorted(sfs):
+    st.markdown(f"## scale factor: {sf}")
     c = px.bar(
         agg.filter(agg["sf"] == sf),
         x="query_number",
@@ -140,7 +206,66 @@ for sf in sorted(sfs):
         color="system",
         category_orders=category_orders,
         barmode="group",
-        pattern_shape="n_partitions",
-        title=f"scale factor: {sf} (~{sf} GB of data in memory; ~{sf*2//5}GB on disk in Parquet)",
+        # pattern_shape="file_type",
+        title=f"scale factor: {sf} (~{sf}GB in memory | ~{round(sf * gb_factor, 2)}GB as {file_type})",
     )
+
+    all_systems = sorted(
+        agg.filter(agg["sf"] == sf)
+        .select("system")
+        .distinct()
+        .to_pandas()["system"]
+        .tolist()
+    )
+
+    all_queries = sorted(
+        t.filter(t["sf"] == sf)
+        .select("query_number")
+        .distinct()
+        .to_pandas()["query_number"]
+        .tolist()
+    )
+
+    cols = st.columns(len(all_systems))
+
+    for system in sorted(
+        agg.filter(agg["sf"] == sf)
+        .select("system")
+        .distinct()
+        .to_pandas()["system"]
+        .tolist()
+    ):
+        queries_completed = (
+            agg.filter(agg["sf"] == sf)
+            .filter(agg["system"] == system)
+            .select("query_number")
+            .distinct()
+            .to_pandas()["query_number"]
+            .tolist()
+        )
+
+        missing_queries = sorted(list(set(all_queries) - set(queries_completed)))
+
+        with cols[all_systems.index(system)]:
+            st.metric(
+                label=f"{system} queries completed",
+                value=f"{len(queries_completed)}/{len(all_queries)}",
+            )
+            st.metric(
+                label=f"{system} total runtime seconds",
+                value=round(
+                    agg.filter(agg["sf"] == sf)
+                    .filter(agg["system"] == system)["mean_execution_seconds"]
+                    .sum()
+                    .to_pandas(),
+                    2,
+                ),
+            )
+            st.metric(
+                label=f"{system} queries missing",
+                value="\n".join([str(q) for q in missing_queries]),
+                help="\n".join([str(q) for q in missing_queries]),
+            )
+
     st.plotly_chart(c)
+    st.markdown("---")

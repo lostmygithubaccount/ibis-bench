@@ -1,6 +1,7 @@
 import ibis
 import uuid
 import typer
+import subprocess
 
 from ibis_bench.utils.logging import log
 from ibis_bench.utils.monitor import monitor_it, jsons_to_parquet
@@ -154,9 +155,47 @@ def run(
                             dialect=backend if backend else None,
                         )
                     except Exception as e:
-                        print(
+                        log.info(
                             f"error running query {q} at scale factor {sf} and {n} partitions: {e}"
                         )
+
+
+# TODO: hmmmm
+@app.command()
+def run_all():
+    """
+    default run all
+    """
+    instance_type = "work laptop"
+    all_systems = [
+        "ibis-duckdb",
+        "ibis-duckdb-sql",
+        "ibis-datafusion",
+        "ibis-datafusion-sql",
+        "polars-lazy",
+        "ibis-polars",
+    ]
+    all_sfs = [
+        1,
+        8,
+        16,
+        32,
+        64,
+        128,
+    ]
+    all_qs = range(1, 23)
+
+    for sf in all_sfs:
+        for system in all_systems:
+            for q in all_qs:
+                cmd = f"bench run {system} -s {sf} -q {q} -i '{instance_type}'"
+
+                log.info(f"running: {cmd}")
+                res = subprocess.run(cmd, shell=True)
+                if res.returncode != 0:
+                    log.info(f"failed to run: {cmd}")
+
+                log.info(f"finished running: {cmd}")
 
 
 @app.command()

@@ -8,3 +8,4 @@ results_data
 tpch_data
 bench*log*
 ibis_bench.log
+out.log

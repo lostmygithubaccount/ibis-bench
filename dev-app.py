@@ -145,6 +145,9 @@ with st.form(key="app"):
         "select instance type",
         instance_types,
         # index=instance_types.index("work laptop"),
+        index=instance_types.index("work laptop")
+        if "work laptop" in instance_types
+        else 0,
     )
 
     # query options
@@ -216,7 +219,7 @@ for sf in sorted(sfs):
     )
 
     all_queries = sorted(
-        agg.filter(agg["sf"] == sf)
+        t.filter(t["sf"] == sf)
         .select("query_number")
         .distinct()
         .to_pandas()["query_number"]

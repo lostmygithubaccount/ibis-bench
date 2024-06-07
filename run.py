@@ -20,9 +20,6 @@ all_sfs = [
 ]
 all_qs = range(1, 23)
 
-all_systems = ["ibis-polars"]
-all_sfs = [150]
-
 
 def main():
     for system in all_systems:

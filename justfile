@@ -98,6 +98,9 @@ gen-data:
 run *args:
     @bench run {{args}} -i "{{instance_type}}"
 
+run-all-temp:
+    nohup bench run-all | tee out.log &
+
 # run all parquet queries
 run-all-parquet:
     nohup just run {{all_systems}} {{extras}} | tee out.log &
