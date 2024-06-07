@@ -59,40 +59,47 @@ ibis.options.repr.interactive.max_columns = None
 # dark mode for px
 px.defaults.template = "plotly_dark"
 
-# ibis connection
-con = ibis.connect("duckdb://app.ddb")
 
-# cloud logs
-cloud = True
+def get_t():
+    # ibis connection
+    con = ibis.connect("duckdb://app.ddb")
 
-if cloud:
-    PROJECT = "voltrondata-demo"
-    BUCKET = "ibis-bench"
-    # BUCKET = "ibis-benchy"
+    # cloud logs
+    cloud = True
 
-    fs = gcsfs.GCSFileSystem(project=PROJECT)
+    if cloud:
+        PROJECT = "voltrondata-demo"
+        BUCKET = "ibis-bench"
+        # BUCKET = "ibis-benchy"
 
-    con.register_filesystem(fs)
+        fs = gcsfs.GCSFileSystem(project=PROJECT)
 
-    glob = f"gs://{BUCKET}/{get_cache_dir()}/*.parquet"
-else:
-    glob = f"{get_cache_dir()}/*.parquet"
+        con.register_filesystem(fs)
 
-# read data
-if "timings" not in con.list_tables():
-    t = (
-        con.read_parquet(glob)
-        .mutate(
-            timestamp=ibis._["timestamp"].cast("timestamp"),
+        glob = f"gs://{BUCKET}/{get_cache_dir()}/*.parquet"
+    else:
+        glob = f"{get_cache_dir()}/*.parquet"
+
+    # read data
+    if "timings" not in con.list_tables():
+        t = (
+            con.read_parquet(glob)
+            .mutate(
+                timestamp=ibis._["timestamp"].cast("timestamp"),
+            )
+            .drop("file_id")
+            .distinct()  # TODO: hmmmmmm
+            .filter(ibis._["file_type"] == "parquet")  # TODO: remove after CSV runs
+            .cache()
         )
-        .drop("file_id")
-        .distinct()  # TODO: hmmmmmm
-        .filter(ibis._["file_type"] == "parquet")  # TODO: remove after CSV runs
-        .cache()
-    )
-    con.create_table("timings", t)
-else:
-    t = con.table("timings")
+        con.create_table("timings", t)
+    else:
+        t = con.table("timings")
+
+    return t
+
+
+t = get_t()
 
 # streamlit viz beyond this point
 cols = st.columns(6)
@@ -132,40 +139,32 @@ with st.form(key="app"):
     system_options = sorted(
         t.select("system").distinct().to_pandas()["system"].tolist()
     )
-    system = st.multiselect(
+    systems = st.multiselect(
         "select system(s)",
         system_options,
         default=system_options,
+    )
+
+    # instance type options
+    instance_type_options = sorted(
+        t.select("instance_type").distinct().to_pandas()["instance_type"].tolist()
+    )
+    instance_types = st.multiselect(
+        "select instance type(s)",
+        instance_type_options,
+        default=[instance_type_options[instance_type_options.index("work laptop")]]
+        if "work laptop" in instance_type_options
+        else [instance_type_options[0]],
     )
 
     # filetype options
     filetype_options = sorted(
         t.select("file_type").distinct().to_pandas()["file_type"].tolist()
     )
-    # file_type = st.multiselect(
-    #    "select a file types",
-    #    filetype_options,
-    #    default=[filetype_options[filetype_options.index("parquet")]]
-    #    if "parquet" in filetype_options
-    #    else 0,
-    # )
     file_type = st.radio(
         "select file type",
         filetype_options,
         index=filetype_options.index("parquet") if "parquet" in filetype_options else 0,
-    )
-
-    # instance type options
-    instance_types = sorted(
-        t.select("instance_type").distinct().to_pandas()["instance_type"].tolist()
-    )
-    instance_type = st.radio(
-        "select instance type",
-        instance_types,
-        # index=instance_types.index("work laptop"),
-        index=instance_types.index("work laptop")
-        if "work laptop" in instance_types
-        else 0,
     )
 
     # query options
@@ -184,13 +183,13 @@ with st.form(key="app"):
 # aggregate data
 agg = (
     t.filter(t["sf"] >= 1)  # TODO: change back to 1
-    .filter(t["system"].isin(system))
+    .filter(t["system"].isin(systems))
     # .filter(t["file_type"].isin(file_type))
     .filter(t["file_type"] == file_type)
-    .filter(t["instance_type"] == instance_type)
+    .filter(t["instance_type"].isin(instance_types))
     .filter(t["query_number"] >= start_query)
     .filter(t["query_number"] <= end_query)
-    .group_by("system", "sf", "query_number")  # , "file_type")
+    .group_by("system", "instance_type", "sf", "query_number")  # , "file_type")
     .agg(
         mean_execution_seconds=t["execution_seconds"].mean(),
         max_peak_cpu=t["peak_cpu"].max(),
@@ -200,6 +199,7 @@ agg = (
         ibis.desc("sf"),
         ibis.asc("query_number"),
         ibis.desc("system"),
+        ibis.desc("instance_type"),
         ibis.asc("mean_execution_seconds"),
         # ibis.asc("file_type"),
     )
@@ -207,10 +207,9 @@ agg = (
 
 sfs = agg.select("sf").distinct().to_pandas()["sf"].tolist()
 category_orders = {
-    "query_number": sorted(
-        agg.select("query_number").distinct().to_pandas()["query_number"].tolist()
-    ),
-    "system": sorted(agg.select("system").distinct().to_pandas()["system"].tolist()),
+    "query_number": sorted(query_numbers),
+    "system": sorted(systems),
+    "instance_type": sorted(instance_types),
 }
 
 gb_factor = 2 / 5 if file_type == "parquet" else 11 / 10
@@ -224,9 +223,10 @@ for sf in sorted(sfs):
         color="system",
         category_orders=category_orders,
         barmode="group",
-        # pattern_shape="file_type",
+        pattern_shape="instance_type",
         title=f"scale factor: {sf} (~{sf}GB in memory | ~{round(sf * gb_factor, 2)}GB as {file_type})",
     )
+    st.plotly_chart(c)
 
     all_systems = sorted(
         agg.filter(agg["sf"] == sf)
@@ -244,46 +244,59 @@ for sf in sorted(sfs):
         .tolist()
     )
 
-    cols = st.columns(len(all_systems))
+    tabs = st.tabs(instance_types)
 
-    for system in sorted(
-        agg.filter(agg["sf"] == sf)
-        .select("system")
-        .distinct()
-        .to_pandas()["system"]
-        .tolist()
-    ):
-        queries_completed = (
-            agg.filter(agg["sf"] == sf)
-            .filter(agg["system"] == system)
-            .select("query_number")
-            .distinct()
-            .to_pandas()["query_number"]
-            .tolist()
-        )
-
-        missing_queries = sorted(list(set(all_queries) - set(queries_completed)))
-
-        with cols[all_systems.index(system)]:
-            st.metric(
-                label=f"{system} queries completed",
-                value=f"{len(queries_completed)}/{len(all_queries)}",
-            )
-            st.metric(
-                label=f"{system} total runtime seconds",
-                value=round(
+    for i in range(len(tabs)):
+        with tabs[i]:
+            cols = st.columns(len(all_systems))
+            for system in sorted(
+                agg.filter(agg["sf"] == sf)
+                .filter(agg["instance_type"] == instance_types[i])
+                .select("system")
+                .distinct()
+                .to_pandas()["system"]
+                .tolist()
+            ):
+                queries_completed = (
                     agg.filter(agg["sf"] == sf)
-                    .filter(agg["system"] == system)["mean_execution_seconds"]
-                    .sum()
-                    .to_pandas(),
-                    2,
-                ),
-            )
-            st.metric(
-                label=f"{system} queries missing",
-                value="\n".join([str(q) for q in missing_queries]),
-                help="\n".join([str(q) for q in missing_queries]),
-            )
+                    .filter(agg["system"] == system)
+                    .filter(agg["instance_type"] == instance_types[i])
+                    .select("query_number")
+                    .distinct()
+                    .to_pandas()["query_number"]
+                    .tolist()
+                )
 
-    st.plotly_chart(c)
+                missing_queries = sorted(
+                    list(set(all_queries) - set(queries_completed))
+                )
+
+                total_runtime_seconds = (
+                    agg.filter(agg["sf"] == sf)
+                    .filter(agg["system"] == system)
+                    .filter(agg["instance_type"] == instance_types[i])[
+                        "mean_execution_seconds"
+                    ]
+                    .sum()
+                    .to_pandas()
+                )
+
+                with cols[all_systems.index(system)]:
+                    st.metric(
+                        label=f"{system} queries completed",
+                        value=f"{len(queries_completed)}/{len(all_queries)}",
+                    )
+                    st.metric(
+                        label=f"{system} total runtime seconds",
+                        value=round(
+                            total_runtime_seconds,
+                            2,
+                        ),
+                    )
+                    st.metric(
+                        label=f"{system} queries missing",
+                        value="\n".join([str(q) for q in missing_queries]),
+                        help="\n".join([str(q) for q in missing_queries]),
+                    )
+
     st.markdown("---")
