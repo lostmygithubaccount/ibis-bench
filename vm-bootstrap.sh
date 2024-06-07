@@ -17,10 +17,11 @@ brew install btop
 brew install tree
 
 # aliases
-echo 'alias python=python3.11' >> $HOME/.bashrc
-echo 'alias pip=pip3.11' >> $HOME/.bashrc
-echo 'alias top=btop' >> $HOME/.bashrc
+echo 'alias python="python3.11"' >> $HOME/.bashrc
+echo 'alias pip="pip3.11"' >> $HOME/.bashrc
+echo 'alias top="btop"' >> $HOME/.bashrc
 echo 'alias du="du -h -d1"' >> $HOME/.bashrc
+echo 'alias v="vi"' >> $HOME/.bashrc
 echo 'alias ..="cd .."' >> $HOME/.bashrc
 echo 'alias ...="cd ../.."' >> $HOME/.bashrc
 echo 'alias ls="ls -1phG -a"' >> $HOME/.bashrc

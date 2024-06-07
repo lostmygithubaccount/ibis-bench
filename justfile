@@ -1,4 +1,4 @@
-# Justfile
+# justfile
 
 # load environment variables
 set dotenv-load
@@ -10,13 +10,14 @@ all_systems := "ibis-duckdb ibis-duckdb-sql ibis-datafusion ibis-datafusion-sql 
 #extras := "-s 1 -s 10 -s 20 -s 40 -s 50 -s 100 -s 150 -s 200"
 extras := "-s 1 -s 8 -s 16 -s 32 -s 64 -s 128" 
 
-# instance_type := "work laptop"
+#instance_type := "work laptop"
 # instance_type := "personal laptop"
 #instance_type := "c3-highcpu-22"
 #instance_type := "c4-highmem-22"
-# instance_type := "c3-highmem-88"
+#instance_type := "c3-highmem-88"
 #instance_type := "c3d-highcpu-30"
-instance_type := "c3-standard-22"
+#instance_type := "c3-standard-22"
+instance_type := "c3-standard-8"
 
 # aliases
 alias fmt:=format

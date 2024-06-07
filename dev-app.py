@@ -67,7 +67,9 @@ if "timings" not in con.list_tables():
         .mutate(
             timestamp=ibis._["timestamp"].cast("timestamp"),
         )
+        .drop("file_id")
         .distinct()  # TODO: hmmmmmm
+        .filter(ibis._["file_type"] == "parquet")  # TODO: remove after CSV runs
         .cache()
     )
     con.create_table("timings", t)
@@ -204,7 +206,6 @@ for sf in sorted(sfs):
         # pattern_shape="file_type",
         title=f"scale factor: {sf} (~{sf}GB in memory | ~{round(sf * gb_factor, 2)}GB as {file_type})",
     )
-    st.plotly_chart(c)
 
     all_systems = sorted(
         agg.filter(agg["sf"] == sf)
@@ -248,9 +249,20 @@ for sf in sorted(sfs):
                 value=f"{len(queries_completed)}/{len(all_queries)}",
             )
             st.metric(
+                label=f"{system} total runtime seconds",
+                value=round(
+                    agg.filter(agg["sf"] == sf)
+                    .filter(agg["system"] == system)["mean_execution_seconds"]
+                    .sum()
+                    .to_pandas(),
+                    2,
+                ),
+            )
+            st.metric(
                 label=f"{system} queries missing",
                 value="\n".join([str(q) for q in missing_queries]),
                 help="\n".join([str(q) for q in missing_queries]),
             )
 
+    st.plotly_chart(c)
     st.markdown("---")
