@@ -4,23 +4,11 @@
 set dotenv-load
 
 # variables
-all_systems := "ibis-duckdb ibis-duckdb-sql ibis-datafusion ibis-datafusion-sql polars-lazy ibis-polars"
-
-#extras := "-s 1"
-#extras := "-s 1 -s 10 -s 20 -s 40 -s 50 -s 100 -s 150 -s 200"
-extras := "-s 1 -s 8 -s 16 -s 32 -s 64 -s 128" 
-
 instance_name := "ibis-bench"
+instance_type := "n2-standard-4"
+instance_zone := "us-central1-b"
 
-#instance_type := "work laptop"
-# instance_type := "personal laptop"
-#instance_type := "c3-highcpu-22"
-#instance_type := "c4-highmem-22"
-#instance_type := "c3-highmem-88"
-#instance_type := "c3d-highcpu-30"
-#instance_type := "c3-standard-22"
-#instance_type := "c3-standard-8"
-instance_type := "nd2-standard-16"
+gen_scale_factors := "-s 1 -s 8 -s 16 -s 32 -s 64 -s 128" 
 
 # aliases
 alias fmt:=format
@@ -45,7 +33,7 @@ install:
 
 # format
 format:
-    @ruff format . || True
+    @ruff format .
 
 # publish-test
 release-test:
@@ -58,13 +46,14 @@ release:
     @twine upload dist/* -u __token__ -p ${PYPI_TOKEN}
 
 # clean
-clean:
+clean-dist:
     @rm -rf dist
 
 # clean logs
 clean-logs:
     @rm -rf bench_logs_*
     @rm -rf bench_cli_logs
+    @rm -f out.log
 
 # clean results
 clean-results:
@@ -76,7 +65,7 @@ clean-app:
 
 # clean all
 clean-all:
-    just clean
+    just clean-dist
     just clean-logs
     just clean-app
     just clean-results
@@ -85,36 +74,30 @@ clean-all:
 app:
     @streamlit run app.py
 
-# dev app
-app-dev:
-    @streamlit run dev-app.py
-
 # open
 open:
     @open https://ibis-bench.streamlit.app
 
-# gen data
+# gen parquet data
 gen-data:
-    @bench gen-data {{extras}} -c
+    @bench gen-data {{gen_scale_factors}} --csv
 
 # run
 run *args:
-    @bench run {{args}} -i "{{instance_type}}"
-
-run-all-temp:
-    nohup bench2 run-all | tee out.log &
+    @bench run ${args}
 
 # run all parquet queries
 run-all-parquet:
-    nohup just run {{all_systems}} {{extras}} | tee out.log &
+    nohup bench2 run | tee out.log &
 
 # run all csv queries
 run-all-csv:
-    nohup just run {{all_systems}} {{extras}} --csv | tee out.log &
+    nohup bench2 run --csv | tee out.log &
 
-# cache json to parquet
-cache:
-    @bench2 combine-json
+# run all
+run-all:
+    just run-all-parquet
+    just run-all-csv
 
 # upload tpch data
 tpch-upload:
@@ -137,7 +120,7 @@ logs-upload:
 # create vm
 vm-create:
     gcloud compute instances create {{instance_name}} \
-        --zone=us-central1-b \
+        --zone={{instance_zone}} \
         --machine-type={{instance_type}} \
         --image=ubuntu-2004-focal-v20240519 \
         --image-project=ubuntu-os-cloud \
@@ -146,22 +129,16 @@ vm-create:
 
 # ssh into vm
 vm-ssh:
-    gcloud compute ssh {{instance_name}} --zone=us-central1-b --tunnel-through-iap
+    gcloud compute ssh {{instance_name}} --zone={{instance_zone}} --tunnel-through-iap
 
 # suspend vm
 vm-suspend:
-    gcloud compute instances stop {{instance_name}} --zone=us-central1-b
+    gcloud compute instances stop {{instance_name}} --zone={{instance_zone}}
 
 # resume vm
 vm-resume:
-    gcloud compute instances start {{instance_name}} --zone=us-central1-b
+    gcloud compute instances start {{instance_name}} --zone={{instance_zone}}
 
 # delete vm
 vm-delete:
-    gcloud compute instances delete {{instance_name}} --zone=us-central1-b
-
-# run on VM
-#vm-run:
-#    gcloud compute ssh {{instance_name}} --zone=us-central1-b --tunnel-through-iap -- bash -s < vm-bootstrap.sh
-
-# gcloud compute ssh {{instance_name}} --zone=us-central1-b --tunnel-through-iap --command "just e2e &"
+    gcloud compute instances delete {{instance_name}} --zone={{instance_zone}}

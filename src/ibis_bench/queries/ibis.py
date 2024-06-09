@@ -1,13 +1,9 @@
-# adapted from corresponding Polars queries
+# adapted from corresponding Polars queries (first ten)
 # also adapted from: https://github.com/ibis-project/ibis/tree/main/ibis/backends/tests/tpch
 
 import ibis
 
 from datetime import date
-
-# TODOs:
-# - investigate some oddities w/ Polars queries
-# - ensure Ibis returns same results as Polars
 
 
 def q1(lineitem, **kwargs):
@@ -320,36 +316,7 @@ def q10(customer, lineitem, nation, orders, **kwargs):
     return q_final
 
 
-# TODO: investigate further
 def q11(nation, partsupp, supplier, **kwargs):
-    # direct translation from Polars
-    # this ended up being slow and resulting in an empty dataframe
-    # (Polars query also resulted in empty dataframe)
-
-    # var1 = "GERMANY"
-    # var2 = 0.0001
-
-    # q1 = (
-    #     partsupp.join(supplier, partsupp["ps_suppkey"] == supplier["s_suppkey"])
-    #     .join(nation, supplier["s_nationkey"] == nation["n_nationkey"])
-    #     .filter(ibis._["n_name"] == var1)
-    # )
-    # q2 = q1.select(
-    #     tmp=((ibis._["ps_supplycost"] * ibis._["ps_availqty"]).sum().round(2) * var2)
-    # ).mutate(lit=ibis.literal(1))
-
-    # q_final = (
-    #     q1.group_by("ps_partkey")
-    #     .agg(value=((ibis._["ps_supplycost"] * ibis._["ps_availqty"]).sum().round(2)))
-    #     .mutate(lit=ibis.literal(1))
-    #     .join(q2, "lit")
-    #     .filter(ibis._["value"] > ibis._["tmp"])
-    #     .select("ps_partkey", "value")
-    #     .order_by(ibis.desc("value"))
-    # )
-
-    # we'll use the Ibis query from the TPCH test suite instead
-    # this still results in an empty dataframe...
     NATION = "GERMANY"
     FRACTION = 0.0001
 

@@ -4,7 +4,7 @@ import subprocess
 from ibis_bench.utils.logging import log
 from ibis_bench.utils.monitor import jsons_to_parquet
 
-DEFAULT_INSTANCE_TYPE = "work laptop"
+DEFAULT_INSTANCE_TYPE = "unknown"
 DEFAULT_SYSTEMS = [
     "ibis-datafusion",
     "ibis-datafusion-sql",
@@ -46,29 +46,37 @@ def run(
     instance_type: str = typer.Option(
         DEFAULT_INSTANCE_TYPE, "--instance-type", "-i", help="instance type"
     ),
+    use_csv: bool = typer.Option(
+        False, "--csv", "-c", help="use CSV instead of Parquet"
+    ),
+    repeat: int = typer.Option(
+        3, "--repeat", "-r", help="number of times to repeat the run"
+    ),
 ):
     """
-    default run all
+    run bench
     """
-    for sf in scale_factors:
-        for system in systems:
-            for q in queries:
-                cmd = f"bench run {system} -s {sf} -q {q} -i '{instance_type}'"
+    for _ in range(repeat):
+        for sf in scale_factors:
+            for system in systems:
+                for q in queries:
+                    cmd = f"bench run {system} -s {sf} -q {q} -i '{instance_type}'"
+                    cmd += " --csv" if use_csv else ""
 
-                log.info(f"running: {cmd}")
-                res = subprocess.run(cmd, shell=True)
-                if res.returncode != 0:
-                    log.info(f"failed to run: {cmd}")
+                    log.info(f"running: {cmd}")
+                    res = subprocess.run(cmd, shell=True)
+                    if res.returncode != 0:
+                        log.info(f"failed to run: {cmd}")
 
-                log.info(f"finished running: {cmd}")
+                    log.info(f"finished running: {cmd}")
 
 
 @app.command()
-def combine_json():
+def combine_json(instance_type: str = typer.Argument(..., help="instance type")):
     """
     combine JSON files as Parquet
     """
-    jsons_to_parquet()
+    jsons_to_parquet(instance_type=instance_type)
 
 
 if __name__ == "__main__":

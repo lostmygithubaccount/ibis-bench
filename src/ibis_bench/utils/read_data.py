@@ -6,7 +6,7 @@ import polars.selectors as ps
 from ibis_bench.utils.gen_data import get_data_dir
 
 
-def get_ibis_tables(sf, n_partitions, con=ibis.connect("duckdb://"), csv: bool = False):
+def get_ibis_tables(sf, n_partitions=1, con=ibis.connect("duckdb://"), csv=False):
     data_directory = get_data_dir(sf, n_partitions, csv=csv)
 
     if not csv:
@@ -90,7 +90,7 @@ def get_ibis_tables(sf, n_partitions, con=ibis.connect("duckdb://"), csv: bool =
     return customer, lineitem, nation, orders, part, partsupp, region, supplier
 
 
-def get_polars_tables(sf, n_partitions, lazy=True, csv: bool = False):
+def get_polars_tables(sf, n_partitions=1, lazy=True, csv=False):
     import os
 
     os.environ["POLARS_ACTIVATE_DECIMAL"] = (
