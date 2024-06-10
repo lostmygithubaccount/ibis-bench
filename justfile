@@ -5,8 +5,8 @@ set dotenv-load
 
 # variables
 ## n2
-# instance_name := "ibis-bench-2"
-# instance_type := "c3-standard-4"
+instance_name := "ibis-bench-2"
+instance_type := "c3-standard-4"
 # 
 #instance_name := "ibis-bench-3"
 #instance_type := "c3-standard-8"
@@ -24,8 +24,8 @@ set dotenv-load
 #instance_name := "ibis-bench-7"
 #instance_type := "n2d-standard-4"
 # 
-instance_name := "ibis-bench-8"
-instance_type := "n2d-standard-8"
+#instance_name := "ibis-bench-8"
+#instance_type := "n2d-standard-8"
 # 
 #instance_name := "ibis-bench-9"
 #instance_type := "n2d-standard-16"

@@ -46,7 +46,6 @@ px.defaults.template = "plotly_dark"
 
 gcp_vm_cpu_map = {
     "n2": "Intel Cascade and Ice Lake",
-    "n4": "Intel Emerald Rapids",
     "n2d": "AMD EPYC",
     "c3": "Intel Saphire Rapids",
 }
@@ -57,15 +56,22 @@ instance_type_details = {
         "type": "MacBook Pro (16-inch, 2021)",
         "cpu": "Apple M1 Max",
         "cpu_cores": "10",
-        "ram": "64GB",
+        "ram": "32GB",
         "disk": "1000GB SSD",
+    },
+    "personal laptop": {
+        "type": "MacBook Pro (16-inch, 2023)",
+        "cpu": "Apple M2 Max",
+        "cpu_cores": "12",
+        "ram": "96GB",
+        "disk": "2000GB SSD",
     },
 }
 
 for gcp_vm_cpu in gcp_vm_cpu_map.keys():
     for gcp_vm_type in gcp_vm_types:
         for gcp_vm_ending in gcp_vm_endings:
-            instance_type_details[f"gcp-{gcp_vm_type}-{gcp_vm_ending}"] = {
+            instance_type_details[f"{gcp_vm_cpu}-{gcp_vm_type}-{gcp_vm_ending}"] = {
                 "type": "GCP VM instance",
                 "cpu": f"{gcp_vm_cpu_map[gcp_vm_cpu]}",
                 "cpu_cores": f"{gcp_vm_ending}",
@@ -76,8 +82,8 @@ for gcp_vm_cpu in gcp_vm_cpu_map.keys():
 
 def get_t():
     # ibis connection
-    # con = ibis.connect("duckdb://app.ddb")
-    con = ibis.connect("duckdb://")
+    con = ibis.connect("duckdb://cache.ddb")
+    # con = ibis.connect("duckdb://")
 
     # cloud logs
     cloud = True
@@ -96,7 +102,8 @@ def get_t():
         glob = f"{get_cache_dir()}/*.parquet"
 
     # read data
-    if "timings" not in con.list_tables():
+    table_name = "bench_data"
+    if table_name not in con.list_tables():
         t = (
             con.read_parquet(glob)
             .mutate(
@@ -107,9 +114,9 @@ def get_t():
             .filter(ibis._["file_type"] == "parquet")  # TODO: remove after CSV runs
             .cache()
         )
-        con.create_table("timings", t)
+        con.create_table(table_name, t)
     else:
-        t = con.table("timings")
+        t = con.table(table_name)
 
     return t
 
@@ -127,7 +134,7 @@ with cols[1]:
     st.metric(
         label="total runtime minutes",
         value=f"{round(t['execution_seconds'].sum().to_pandas() / 60, 2):,}",
-        help=f"average: {round(t['execution_seconds'].mean().to_pandas(), 2)}s/query"
+        help=f"average: {round(t['execution_seconds'].mean().to_pandas(), 2)}s/query",
     )
 with cols[2]:
     st.metric(
@@ -208,10 +215,12 @@ with st.form(key="app"):
 # display instance type details
 st.markdown("### instance type details")
 
-# for instance_type in instance_types:
-#     st.markdown(f"#### {instance_type}")
-#     for k, v in instance_type_details[instance_type].items():
-#         st.write(f"{k}: {v}")
+tabs = st.tabs(sorted(instance_types))
+for instance_type in sorted(instance_types):
+    with tabs[sorted(instance_types).index(instance_type)]:
+        st.markdown(f"#### {instance_type}")
+        for k, v in instance_type_details[instance_type].items():
+            st.write(f"{k}: {v}")
 
 # aggregate data
 agg = (
