@@ -19,7 +19,7 @@ ibis_version = [d for d in dependencies if "ibis" in d][0]
 st.set_page_config(layout="wide")
 st.title("WIP Ibis benchmarking")
 details = f"""
-work in progress...data takes a bit to load from GCS...
+work in progress...
 
 versions:
 
@@ -31,15 +31,6 @@ versions:
 **DATA IS NOT FINALIZED**
 
 the purpose of this dashboard is to compare TPC-H benchmarks across the big three single-node, Apache Arrow-based, modern OLAP engines: DuckDB, DataFusion, and Polars
-
-TODOs include:
-
-- [ ] finalize CPU/memory usage data + add to visualizations
-- [ ] ensure Polars queries are up to date
-- [ ] double-check query correctness across
-- [ ] code cleanup
-- [ ] final runs across laptop(s), VMs, file types (Parquet, CSV)
-- [ ] write up a (very easily reproduceable) blog post
 """
 details = details.strip()
 st.markdown(details)
@@ -51,10 +42,42 @@ ibis.options.repr.interactive.max_columns = None
 # dark mode for px
 px.defaults.template = "plotly_dark"
 
+# instance type mapping
+
+gcp_vm_cpu_map = {
+    "n2": "Intel Cascade and Ice Lake",
+    "n4": "Intel Emerald Rapids",
+    "n2d": "AMD EPYC",
+    "c3": "Intel Saphire Rapids",
+}
+gcp_vm_types = ["standard"]
+gcp_vm_endings = [2, 4, 8, 16, 22, 32, 44]
+instance_type_details = {
+    "work laptop": {
+        "type": "MacBook Pro (16-inch, 2021)",
+        "cpu": "Apple M1 Max",
+        "cpu_cores": "10",
+        "ram": "64GB",
+        "disk": "1000GB SSD",
+    },
+}
+
+for gcp_vm_cpu in gcp_vm_cpu_map.keys():
+    for gcp_vm_type in gcp_vm_types:
+        for gcp_vm_ending in gcp_vm_endings:
+            instance_type_details[f"gcp-{gcp_vm_type}-{gcp_vm_ending}"] = {
+                "type": "GCP VM instance",
+                "cpu": f"{gcp_vm_cpu_map[gcp_vm_cpu]}",
+                "cpu_cores": f"{gcp_vm_ending}",
+                "ram": f"{gcp_vm_ending * 4}GB",
+                "disk": "1000 GB SSD",
+            }
+
 
 def get_t():
     # ibis connection
-    con = ibis.connect("duckdb://app.ddb")
+    # con = ibis.connect("duckdb://app.ddb")
+    con = ibis.connect("duckdb://")
 
     # cloud logs
     cloud = True
@@ -98,27 +121,28 @@ cols = st.columns(6)
 with cols[0]:
     st.metric(
         label="total queries run",
-        value=t.count().to_pandas(),
+        value=f"{t.count().to_pandas():,}",
     )
 with cols[1]:
     st.metric(
-        label="total queries run (parquet)",
-        value=t.filter(t["file_type"] == "parquet").count().to_pandas(),
+        label="total runtime minutes",
+        value=f"{round(t['execution_seconds'].sum().to_pandas() / 60, 2):,}",
+        help=f"average: {round(t['execution_seconds'].mean().to_pandas(), 2)}s/query"
     )
 with cols[2]:
     st.metric(
-        label="total queries run (csv)",
-        value=t.filter(t["file_type"] == "csv").count().to_pandas(),
+        label="total systems",
+        value=t.select("system").distinct().count().to_pandas(),
     )
 with cols[3]:
     st.metric(
-        label="total runtime minutes",
-        value=round(t["execution_seconds"].sum().to_pandas() / 60, 2),
+        label="total instance types",
+        value=t.select("instance_type").distinct().count().to_pandas(),
     )
 with cols[4]:
     st.metric(
-        label="total systems",
-        value=t.select("system").distinct().count().to_pandas(),
+        label="total scale factors",
+        value=t.select("sf").distinct().count().to_pandas(),
     )
 with cols[5]:
     st.metric(
@@ -152,9 +176,10 @@ with st.form(key="app"):
     instance_types = st.multiselect(
         "select instance type(s)",
         instance_type_options,
-        default=[instance_type_options[instance_type_options.index("work laptop")]]
-        if "work laptop" in instance_type_options
-        else [instance_type_options[0]],
+        # default=[instance_type_options[instance_type_options.index("work laptop")]]
+        # if "work laptop" in instance_type_options
+        # else [instance_type_options[0]],
+        default=instance_type_options,
     )
 
     # filetype options
@@ -180,6 +205,14 @@ with st.form(key="app"):
     # submit button
     update_button = st.form_submit_button(label="update")
 
+# display instance type details
+st.markdown("### instance type details")
+
+# for instance_type in instance_types:
+#     st.markdown(f"#### {instance_type}")
+#     for k, v in instance_type_details[instance_type].items():
+#         st.write(f"{k}: {v}")
+
 # aggregate data
 agg = (
     t.filter(t["sf"] >= 1)  # TODO: change back to 1
@@ -193,8 +226,6 @@ agg = (
     .group_by("system", "instance_type", "sf", "query_number")  # , "file_type")
     .agg(
         mean_execution_seconds=t["execution_seconds"].mean(),
-        max_peak_cpu=t["peak_cpu"].max(),
-        max_peak_memory=t["peak_memory"].max(),
     )
     .order_by(
         ibis.desc("sf"),

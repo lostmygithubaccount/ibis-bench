@@ -89,7 +89,7 @@ def jsons_to_parquet(instance_type: str):
 
     con = ibis.connect("duckdb://")
     t = con.read_json(f"{get_raw_json_dir()}/file_id=*.json")
-    t = t.mutate(instance_type=instance_type)
+    t = t.mutate(instance_type=ibis.literal(instance_type))
 
     file_path = os.path.join(get_cache_dir(), f"file_id={file_id}.parquet")
 
