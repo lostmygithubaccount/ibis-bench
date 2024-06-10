@@ -157,6 +157,7 @@ with cols[5]:
         value=t.select("query_number").distinct().count().to_pandas(),
     )
 
+# user options
 with st.form(key="app"):
     # system options
     system_options = sorted(
@@ -176,9 +177,9 @@ with st.form(key="app"):
         default=sfs,
     )
 
-    # instance type options
     instance_type_options = sorted(
-        t.select("instance_type").distinct().to_pandas()["instance_type"].tolist()
+        t.select("instance_type").distinct().to_pandas()["instance_type"].tolist(),
+        key=lambda x: (x.split("-")[0], int(x.split("-")[-1])) if "-" in x else (x, 0),
     )
     instance_types = st.multiselect(
         "select instance type(s)",
@@ -190,6 +191,10 @@ with st.form(key="app"):
         default=[
             instance for instance in instance_type_options if instance.startswith("n2d")
         ],
+    )
+    instance_types = sorted(
+        instance_types,
+        key=lambda x: (x.split("-")[0], int(x.split("-")[-1])) if "-" in x else (x, 0),
     )
 
     # filetype options
@@ -218,9 +223,9 @@ with st.form(key="app"):
 # display instance type details
 st.markdown("### instance type details")
 
-tabs = st.tabs(sorted(instance_types))
-for instance_type in sorted(instance_types):
-    with tabs[sorted(instance_types).index(instance_type)]:
+tabs = st.tabs(instance_types)
+for instance_type in instance_types:
+    with tabs[instance_types.index(instance_type)]:
         st.markdown(f"#### {instance_type}")
         for k, v in instance_type_details[instance_type].items():
             st.write(f"{k}: {v}")
@@ -255,7 +260,7 @@ sfs = agg.select("sf").distinct().to_pandas()["sf"].tolist()
 category_orders = {
     "query_number": sorted(query_numbers),
     "system": sorted(all_systems),
-    "instance_type": sorted(instance_types),
+    "instance_type": instance_types,
 }
 
 gb_factor = 2 / 5 if file_type == "parquet" else 11 / 10
@@ -283,7 +288,7 @@ for sf in sorted(sfs):
     )
     all_queries = range(start_query, end_query + 1)
 
-    tabs = st.tabs(sorted(instance_types))
+    tabs = st.tabs(instance_types)
 
     for i in range(len(tabs)):
         with tabs[i]:
