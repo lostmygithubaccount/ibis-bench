@@ -186,7 +186,10 @@ with st.form(key="app"):
         # default=[instance_type_options[instance_type_options.index("work laptop")]]
         # if "work laptop" in instance_type_options
         # else [instance_type_options[0]],
-        default=instance_type_options,
+        # default=instance_type_options,
+        default=[
+            instance for instance in instance_type_options if instance.startswith("n2d")
+        ],
     )
 
     # filetype options
