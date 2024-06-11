@@ -6,7 +6,9 @@ import polars.selectors as ps
 from ibis_bench.utils.gen_data import get_data_dir
 
 
-def get_ibis_tables(sf, n_partitions=1, con=ibis.connect("duckdb://"), csv=False):
+def get_ibis_tables(
+    sf, n_partitions=1, con=ibis.connect("duckdb://"), csv=False, decimal_to_float=True
+):
     data_directory = get_data_dir(sf, n_partitions, csv=csv)
 
     if not csv:
@@ -59,14 +61,15 @@ def get_ibis_tables(sf, n_partitions=1, con=ibis.connect("duckdb://"), csv=False
             )
         )
 
-    customer = _decimal_to_float(customer)
-    lineitem = _decimal_to_float(lineitem)
-    nation = _decimal_to_float(nation)
-    orders = _decimal_to_float(orders)
-    part = _decimal_to_float(part)
-    partsupp = _decimal_to_float(partsupp)
-    region = _decimal_to_float(region)
-    supplier = _decimal_to_float(supplier)
+    if decimal_to_float:
+        customer = _decimal_to_float(customer)
+        lineitem = _decimal_to_float(lineitem)
+        nation = _decimal_to_float(nation)
+        orders = _decimal_to_float(orders)
+        part = _decimal_to_float(part)
+        partsupp = _decimal_to_float(partsupp)
+        region = _decimal_to_float(region)
+        supplier = _decimal_to_float(supplier)
 
     # TODO: keep this or figure something out and remove
     def _drop_hive_cols(t):
@@ -90,7 +93,7 @@ def get_ibis_tables(sf, n_partitions=1, con=ibis.connect("duckdb://"), csv=False
     return customer, lineitem, nation, orders, part, partsupp, region, supplier
 
 
-def get_polars_tables(sf, n_partitions=1, lazy=True, csv=False):
+def get_polars_tables(sf, n_partitions=1, lazy=True, csv=False, decimal_to_float=True):
     import os
 
     os.environ["POLARS_ACTIVATE_DECIMAL"] = (
@@ -141,14 +144,15 @@ def get_polars_tables(sf, n_partitions=1, lazy=True, csv=False):
     def _decimal_to_float(df):
         return df.with_columns((ps.decimal().cast(pl.Float64)))
 
-    customer = _decimal_to_float(customer)
-    lineitem = _decimal_to_float(lineitem)
-    nation = _decimal_to_float(nation)
-    orders = _decimal_to_float(orders)
-    part = _decimal_to_float(part)
-    partsupp = _decimal_to_float(partsupp)
-    region = _decimal_to_float(region)
-    supplier = _decimal_to_float(supplier)
+    if decimal_to_float:
+        customer = _decimal_to_float(customer)
+        lineitem = _decimal_to_float(lineitem)
+        nation = _decimal_to_float(nation)
+        orders = _decimal_to_float(orders)
+        part = _decimal_to_float(part)
+        partsupp = _decimal_to_float(partsupp)
+        region = _decimal_to_float(region)
+        supplier = _decimal_to_float(supplier)
 
     # TODO: keep this or figure something out and remove
     def _drop_hive_cols(df):

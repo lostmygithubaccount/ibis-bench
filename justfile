@@ -5,8 +5,8 @@ set dotenv-load
 
 # variables
 ## n2
-instance_name := "ibis-bench-2"
-instance_type := "c3-standard-4"
+#instance_name := "ibis-bench-2"
+#instance_type := "c3-standard-4"
 # 
 #instance_name := "ibis-bench-3"
 #instance_type := "c3-standard-8"
@@ -37,8 +37,8 @@ instance_type := "c3-standard-4"
 #instance_name := "ibis-bench-11"
 #instance_type := "n2-standard-2"
 # 
-#instance_name := "ibis-bench-12"
-#instance_type := "n2-standard-4"
+instance_name := "ibis-bench-12"
+instance_type := "n2-standard-4"
 # 
 #instance_name := "ibis-bench-13"
 #instance_type := "n2-standard-8"
@@ -106,6 +106,7 @@ clean-results:
 # clean app
 clean-app:
     @rm -rf app.ddb*
+    @rm -rf cache.ddb*
 
 # clean all
 clean-all:
@@ -116,7 +117,7 @@ clean-all:
 
 # app
 app:
-    @streamlit run app.py
+    @streamlit run results.py
 
 # open
 open:

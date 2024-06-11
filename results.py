@@ -45,9 +45,9 @@ px.defaults.template = "plotly_dark"
 # instance type mapping
 
 gcp_vm_cpu_map = {
+    "c3": "Intel Saphire Rapids",
     "n2": "Intel Cascade and Ice Lake",
     "n2d": "AMD EPYC",
-    "c3": "Intel Saphire Rapids",
 }
 gcp_vm_types = ["standard"]
 gcp_vm_endings = [2, 4, 8, 16, 22, 32, 44]
@@ -123,41 +123,48 @@ def get_t():
 
 t = get_t()
 
+
 # streamlit viz beyond this point
-cols = st.columns(6)
-with cols[0]:
-    st.metric(
-        label="total queries run",
-        value=f"{t.count().to_pandas():,}",
-    )
-with cols[1]:
-    st.metric(
-        label="total runtime minutes",
-        value=f"{round(t['execution_seconds'].sum().to_pandas() / 60, 2):,}",
-        help=f"average: {round(t['execution_seconds'].mean().to_pandas(), 2)}s/query",
-    )
-with cols[2]:
-    st.metric(
-        label="total systems",
-        value=t.select("system").distinct().count().to_pandas(),
-    )
-with cols[3]:
-    st.metric(
-        label="total instance types",
-        value=t.select("instance_type").distinct().count().to_pandas(),
-    )
-with cols[4]:
-    st.metric(
-        label="total scale factors",
-        value=t.select("sf").distinct().count().to_pandas(),
-    )
-with cols[5]:
-    st.metric(
-        label="total queries",
-        value=t.select("query_number").distinct().count().to_pandas(),
-    )
+def totals_metrics(t):
+    cols = st.columns(6)
+    with cols[0]:
+        st.metric(
+            label="total queries run",
+            value=f"{t.count().to_pandas():,}",
+        )
+    with cols[1]:
+        st.metric(
+            label="total runtime minutes",
+            value=f"{round(t['execution_seconds'].sum().to_pandas() / 60, 2):,}",
+            help=f"average: {round(t['execution_seconds'].mean().to_pandas(), 2)}s/query",
+        )
+    with cols[2]:
+        st.metric(
+            label="total systems",
+            value=t.select("system").distinct().count().to_pandas(),
+        )
+    with cols[3]:
+        st.metric(
+            label="total instance types",
+            value=t.select("instance_type").distinct().count().to_pandas(),
+        )
+    with cols[4]:
+        st.metric(
+            label="total scale factors",
+            value=t.select("sf").distinct().count().to_pandas(),
+        )
+    with cols[5]:
+        st.metric(
+            label="total queries",
+            value=t.select("query_number").distinct().count().to_pandas(),
+        )
+
+
+st.markdown("## totals (all data)")
+totals_metrics(t)
 
 # user options
+st.markdown("## data filters")
 with st.form(key="app"):
     # system options
     system_options = sorted(
@@ -184,13 +191,15 @@ with st.form(key="app"):
     instance_types = st.multiselect(
         "select instance type(s)",
         instance_type_options,
-        # default=[instance_type_options[instance_type_options.index("work laptop")]]
-        # if "work laptop" in instance_type_options
-        # else [instance_type_options[0]],
-        # default=instance_type_options,
         default=[
-            instance for instance in instance_type_options if instance.startswith("n2d")
+            instance
+            for instance in instance_type_options
+            if instance.startswith("n2d")
+            # instance
+            # for instance in instance_type_options
+            # if "laptop" in instance
         ],
+        # default=instance_type_options,
     )
     instance_types = sorted(
         instance_types,
@@ -220,19 +229,29 @@ with st.form(key="app"):
     # submit button
     update_button = st.form_submit_button(label="update")
 
+st.markdown("## totals (filtered data)")
+totals_metrics(
+    t.filter(t["sf"].isin(scale_factors))
+    .filter(t["system"].isin(systems))
+    .filter(t["file_type"] == file_type)
+    .filter(t["instance_type"].isin(instance_types))
+    .filter(t["query_number"] >= start_query)
+    .filter(t["query_number"] <= end_query)
+)
+
 # display instance type details
-st.markdown("### instance type details")
+st.markdown("## instance type details")
 
 tabs = st.tabs(instance_types)
 for instance_type in instance_types:
     with tabs[instance_types.index(instance_type)]:
-        st.markdown(f"#### {instance_type}")
+        st.markdown(f"### {instance_type}")
         for k, v in instance_type_details[instance_type].items():
             st.write(f"{k}: {v}")
 
 # aggregate data
 agg = (
-    t.filter(t["sf"] >= 1)  # TODO: change back to 1
+    t.filter(t["sf"] >= 1)
     .filter(t["sf"].isin(scale_factors))
     .filter(t["system"].isin(systems))
     # .filter(t["file_type"].isin(file_type))
