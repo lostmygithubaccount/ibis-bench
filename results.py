@@ -22,16 +22,14 @@ ibis_version = [d for d in dependencies if "ibis" in d][0]
 details = f"""
 work in progress...
 
+the purpose of this dashboard is to compare TPC-H benchmarks across the big three single-node, Apache Arrow-based, modern OLAP engines: DuckDB, DataFusion, and Polars
+
 versions:
 
 - DataFusion: `{datafusion_version}`
 - DuckDB: `{duckdb_version}`
 - Polars: `{polars_version}`
 - Ibis: `{ibis_version}`
-
-**DATA IS NOT FINALIZED**
-
-the purpose of this dashboard is to compare TPC-H benchmarks across the big three single-node, Apache Arrow-based, modern OLAP engines: DuckDB, DataFusion, and Polars
 """
 details = details.strip()
 st.markdown(details)
