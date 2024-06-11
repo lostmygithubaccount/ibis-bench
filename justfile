@@ -18,8 +18,8 @@ set dotenv-load
 #instance_type := "c3-standard-44"
 # 
 # # n2d
-#instance_name := "ibis-bench-6"
-#instance_type := "n2d-standard-2"
+instance_name := "ibis-bench-6"
+instance_type := "n2d-standard-2"
 # 
 #instance_name := "ibis-bench-7"
 #instance_type := "n2d-standard-4"
@@ -37,8 +37,8 @@ set dotenv-load
 #instance_name := "ibis-bench-11"
 #instance_type := "n2-standard-2"
 # 
-instance_name := "ibis-bench-12"
-instance_type := "n2-standard-4"
+#instance_name := "ibis-bench-12"
+#instance_type := "n2-standard-4"
 # 
 #instance_name := "ibis-bench-13"
 #instance_type := "n2-standard-8"
@@ -88,32 +88,6 @@ release-test:
 release:
     just build
     @twine upload dist/* -u __token__ -p ${PYPI_TOKEN}
-
-# clean
-clean-dist:
-    @rm -rf dist
-
-# clean logs
-clean-logs:
-    @rm -rf bench_logs_*
-    @rm -rf bench_cli_logs
-    @rm -f out.log
-
-# clean results
-clean-results:
-    @rm -rf results_data
-
-# clean app
-clean-app:
-    @rm -rf app.ddb*
-    @rm -rf cache.ddb*
-
-# clean all
-clean-all:
-    just clean-dist
-    just clean-logs
-    just clean-app
-    just clean-results
 
 # app
 app:
@@ -187,3 +161,29 @@ vm-resume:
 # delete vm
 vm-delete:
     gcloud compute instances delete {{instance_name}} --zone={{instance_zone}}
+
+# clean dist
+clean-dist:
+    @rm -rf dist
+
+# clean logs
+clean-logs:
+    @rm -rf bench_logs_*
+    @rm -rf bench_cli_logs
+    @rm -f out.log
+
+# clean results
+clean-results:
+    @rm -rf results_data
+
+# clean app
+clean-app:
+    @rm -rf app.ddb*
+    @rm -rf cache.ddb*
+
+# clean all
+clean-all:
+    just clean-dist
+    just clean-logs
+    just clean-app
+    just clean-results

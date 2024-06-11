@@ -1,8 +1,11 @@
+import os
+import ibis
+import uuid
 import typer
 import subprocess
 
 from ibis_bench.utils.logging import log
-from ibis_bench.utils.monitor import jsons_to_parquet
+from ibis_bench.utils.monitor import get_raw_json_dir, get_cache_dir
 
 DEFAULT_INSTANCE_TYPE = "unknown"
 DEFAULT_SYSTEMS = [
@@ -76,7 +79,17 @@ def combine_json(instance_type: str = typer.Argument(..., help="instance type"))
     """
     combine JSON files as Parquet
     """
-    jsons_to_parquet(instance_type=instance_type)
+    file_id = str(uuid.uuid4())
+
+    con = ibis.connect("duckdb://")
+    t = con.read_json(f"{get_raw_json_dir()}/file_id=*.json")
+    t = t.mutate(instance_type=ibis.literal(instance_type))
+
+    file_path = os.path.join(get_cache_dir(), f"file_id={file_id}.parquet")
+
+    log.info(f"\twriting monitor data to {file_path}...")
+    t.to_parquet(file_path)
+    log.info(f"\tdone writing monitor data to {file_path}...")
 
 
 if __name__ == "__main__":

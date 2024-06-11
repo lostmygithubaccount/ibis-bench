@@ -96,6 +96,7 @@ def get_ibis_tables(
 def get_polars_tables(sf, n_partitions=1, lazy=True, csv=False, decimal_to_float=True):
     import os
 
+    # TODO: remove after Polars v1.0.0
     os.environ["POLARS_ACTIVATE_DECIMAL"] = (
         "1"  # https://github.com/pola-rs/polars/issues/16603#issuecomment-2141701041
     )

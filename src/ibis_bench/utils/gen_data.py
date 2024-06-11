@@ -5,10 +5,8 @@ from ibis_bench.utils.logging import log
 
 
 def get_data_dir(sf, n_partitions, csv: bool = False):
-    if not csv:
-        return os.path.join("tpch_data", "parquet", f"sf={sf}", f"n={n_partitions}")
-    else:
-        return os.path.join("tpch_data", "csv", f"sf={sf}", f"n={n_partitions}")
+    dir_name = "csv" if csv else "parquet"
+    return os.path.join("tpch_data", dir_name, f"sf={sf}", f"n={n_partitions}")
 
 
 def generate_data(sf, n_partitions, csv: bool = False):

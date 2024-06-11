@@ -4,7 +4,10 @@ import tomllib
 import streamlit as st
 import plotly.express as px
 
-from ibis_bench.utils.monitor import get_timings_dir, get_cache_dir, get_raw_json_dir  # noqa
+from ibis_bench.utils.monitor import get_cache_dir
+
+st.set_page_config(layout="wide")
+st.title("Ibis benchmarking results")
 
 with open("pyproject.toml", "rb") as f:
     pyproject = tomllib.load(f)
@@ -16,8 +19,6 @@ duckdb_version = [d for d in dependencies if "duckdb" in d][0]
 polars_version = [d for d in dependencies if "polars" in d][0]
 ibis_version = [d for d in dependencies if "ibis" in d][0]
 
-st.set_page_config(layout="wide")
-st.title("WIP Ibis benchmarking")
 details = f"""
 work in progress...
 
