@@ -17,6 +17,20 @@ For convenience, we define a hyphen-separated naming convention for the 'systems
 st.markdown(methodology)
 
 methodology = """
+## Important considerations
+
+Noted in more detail below (with code as the source of truth), but some important considerations include:
+
+- TPC-H data is generated via DuckDB as Parquet files, with non-integers as decimals
+- data is read in with decimals converted to floats for each query, by Ibis (via the corresponding backend) and Polars
+    - additionally, hive-style partitioned columns are dropped
+- queries are run 3 times and the average is taken
+- all data is available in a public `gs://ibis-bench/` bucket for analysis (you can take a minimum instead of an average, for example)
+- some Polars TPC-H queries were recently re-written; we will update `ibis-bench` and re-run soon including these and using newer versions of libraries
+"""
+st.markdown(methodology)
+
+methodology = """
 ## Data generation
 
 We use the [DuckDB TPC-H Extension](https://duckdb.org/docs/extensions/tpch.html) to generate the TPC-H data as Parquet, and optionally CSV files. The data can be partitioned.

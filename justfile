@@ -4,52 +4,8 @@
 set dotenv-load
 
 # variables
-## n2
-#instance_name := "ibis-bench-2"
-#instance_type := "c3-standard-4"
-# 
-#instance_name := "ibis-bench-3"
-#instance_type := "c3-standard-8"
-# 
-#instance_name := "ibis-bench-4"
-#instance_type := "c3-standard-22"
-# 
-#instance_name := "ibis-bench-5"
-#instance_type := "c3-standard-44"
-# 
-# # n2d
-instance_name := "ibis-bench-6"
+instance_name := "ibis-bench"
 instance_type := "n2d-standard-2"
-# 
-#instance_name := "ibis-bench-7"
-#instance_type := "n2d-standard-4"
-# 
-#instance_name := "ibis-bench-8"
-#instance_type := "n2d-standard-8"
-# 
-#instance_name := "ibis-bench-9"
-#instance_type := "n2d-standard-16"
-# 
-#instance_name := "ibis-bench-10"
-#instance_type := "n2d-standard-32"
-# 
-# # n4
-#instance_name := "ibis-bench-11"
-#instance_type := "n2-standard-2"
-# 
-#instance_name := "ibis-bench-12"
-#instance_type := "n2-standard-4"
-# 
-#instance_name := "ibis-bench-13"
-#instance_type := "n2-standard-8"
-# 
-#instance_name := "ibis-bench-14"
-#instance_type := "n2-standard-16"
-# 
-#instance_name := "ibis-bench-15"
-#instance_type := "n2-standard-32"
-
-### --- ####
 instance_zone := "us-central1-b"
 
 gen_scale_factors := "-s 1 -s 8 -s 16 -s 32 -s 64 -s 128" 
