@@ -22,7 +22,7 @@ dependencies = [
     'duckdb==1.0.0',
     'polars==0.20.31',
     'datafusion==38.0.1',
-    'ibis-framework @ git+https://github.com/ibis-project/ibis',
+    'ibis-framework==9.1.0',
     # other stuff
     'typer',
     'python-dotenv',

@@ -175,14 +175,6 @@ with st.form(key="app"):
         default=system_options,
     )
 
-    # sfs options
-    sfs = sorted(t.select("sf").distinct().to_pandas()["sf"].tolist())
-    scale_factors = st.multiselect(
-        "select scale factor(s)",
-        sfs,
-        default=sfs,
-    )
-
     instance_type_options = sorted(
         t.select("instance_type").distinct().to_pandas()["instance_type"].tolist(),
         key=lambda x: (x.split("-")[0], int(x.split("-")[-1])) if "-" in x else (x, 0),
@@ -203,6 +195,19 @@ with st.form(key="app"):
     instance_types = sorted(
         instance_types,
         key=lambda x: (x.split("-")[0], int(x.split("-")[-1])) if "-" in x else (x, 0),
+    )
+
+    # sfs options
+    sfs = sorted(t.select("sf").distinct().to_pandas()["sf"].tolist())
+    # scale_factors = st.multiselect(
+    #    "select scale factor(s)",
+    #    sfs,
+    #    default=sfs,
+    # )
+    scale_factor = st.radio(
+        "select scale factor",
+        sfs,
+        index=sfs.index(sfs[-1]),
     )
 
     # filetype options
@@ -230,7 +235,7 @@ with st.form(key="app"):
 
 st.markdown("## totals (filtered data)")
 totals_metrics(
-    t.filter(t["sf"].isin(scale_factors))
+    t.filter(t["sf"] == scale_factor)
     .filter(t["system"].isin(systems))
     .filter(t["file_type"] == file_type)
     .filter(t["instance_type"].isin(instance_types))
@@ -250,8 +255,7 @@ for instance_type in instance_types:
 
 # aggregate data
 agg = (
-    t.filter(t["sf"] >= 1)
-    .filter(t["sf"].isin(scale_factors))
+    t.filter(t["sf"] == scale_factor)
     .filter(t["system"].isin(systems))
     # .filter(t["file_type"].isin(file_type))
     .filter(t["file_type"] == file_type)

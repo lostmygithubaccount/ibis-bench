@@ -35,7 +35,7 @@ methodology = """
 
 We use the [DuckDB TPC-H Extension](https://duckdb.org/docs/extensions/tpch.html) to generate the TPC-H data as Parquet, and optionally CSV files. The data can be partitioned.
 
-For the current results, only Parquet data at `n=1` partitions at various scale factors are used.
+For the current results, only Parquet data at `n=1` partitions at various scale factors are used. After generation, the data is uploaded to a cloud bucket for re-use (see the `justfile` below).
 
 You can see the data generation source code below:
 """
