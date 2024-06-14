@@ -3,7 +3,7 @@ import streamlit as st
 
 from results import get_t
 
-st.set_page_config(layout="wide")
+#st.set_page_config(layout="wide")
 st.title("Ibis benchmarking instance type details")
 
 t = get_t()
