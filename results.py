@@ -41,43 +41,6 @@ ibis.options.repr.interactive.max_columns = None
 # dark mode for px
 px.defaults.template = "plotly_dark"
 
-# instance type mapping
-
-gcp_vm_cpu_map = {
-    "c3": "Intel Saphire Rapids",
-    "n2": "Intel Cascade and Ice Lake",
-    "n2d": "AMD EPYC",
-}
-gcp_vm_types = ["standard"]
-gcp_vm_endings = [2, 4, 8, 16, 22, 32, 44]
-instance_type_details = {
-    "work laptop": {
-        "type": "MacBook Pro (16-inch, 2021)",
-        "cpu": "Apple M1 Max",
-        "cpu_cores": "10",
-        "ram": "32GB",
-        "disk": "1000GB SSD",
-    },
-    "personal laptop": {
-        "type": "MacBook Pro (16-inch, 2023)",
-        "cpu": "Apple M2 Max",
-        "cpu_cores": "12",
-        "ram": "96GB",
-        "disk": "2000GB SSD",
-    },
-}
-
-for gcp_vm_cpu in gcp_vm_cpu_map.keys():
-    for gcp_vm_type in gcp_vm_types:
-        for gcp_vm_ending in gcp_vm_endings:
-            instance_type_details[f"{gcp_vm_cpu}-{gcp_vm_type}-{gcp_vm_ending}"] = {
-                "type": "GCP VM instance",
-                "cpu": f"{gcp_vm_cpu_map[gcp_vm_cpu]}",
-                "cpu_cores": f"{gcp_vm_ending}",
-                "ram": f"{gcp_vm_ending * 4}GB",
-                "disk": "1000 GB SSD",
-            }
-
 
 def get_t():
     # ibis connection
@@ -172,7 +135,8 @@ with st.form(key="app"):
     systems = st.multiselect(
         "select system(s)",
         system_options,
-        default=system_options,
+        # default=system_options,
+        default=["ibis-datafusion", "ibis-duckdb", "polars-lazy"],
     )
 
     instance_type_options = sorted(
@@ -183,12 +147,12 @@ with st.form(key="app"):
         "select instance type(s)",
         instance_type_options,
         default=[
-            instance
-            for instance in instance_type_options
-            if instance.startswith("n2d")
             # instance
             # for instance in instance_type_options
-            # if "laptop" in instance
+            # if instance.startswith("n2d")
+            instance
+            for instance in instance_type_options
+            if "work laptop" in instance
         ],
         # default=instance_type_options,
     )
@@ -230,6 +194,9 @@ with st.form(key="app"):
         value=(min(query_numbers), max(query_numbers)),
     )
 
+    # log_y
+    log_y = st.toggle("log y-axis", True)
+
     # submit button
     update_button = st.form_submit_button(label="update")
 
@@ -242,16 +209,6 @@ totals_metrics(
     .filter(t["query_number"] >= start_query)
     .filter(t["query_number"] <= end_query)
 )
-
-# display instance type details
-st.markdown("## instance type details")
-
-tabs = st.tabs(instance_types)
-for instance_type in instance_types:
-    with tabs[instance_types.index(instance_type)]:
-        st.markdown(f"### {instance_type}")
-        for k, v in instance_type_details[instance_type].items():
-            st.write(f"{k}: {v}")
 
 # aggregate data
 agg = (
@@ -293,6 +250,7 @@ for sf in sorted(sfs):
         agg.filter(agg["sf"] == sf),
         x="query_number",
         y="mean_execution_seconds",
+        log_y=log_y,
         color="system",
         category_orders=category_orders,
         barmode="group",

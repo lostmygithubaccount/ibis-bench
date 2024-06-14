@@ -13,7 +13,7 @@ def generate_data(sf, n_partitions, csv: bool = False):
     log.info(f"generating data for sf={sf}, n={n_partitions}...")
 
     con = ibis.connect("duckdb://")
-    con.raw_sql("set enable_progress_bar = false")
+    con.raw_sql("PRAGMA disable_progress_bar;")
 
     parquet_data_directory = get_data_dir(sf, n_partitions)
     csv_data_directory = get_data_dir(sf, n_partitions, csv=True)
