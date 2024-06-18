@@ -245,9 +245,9 @@ category_orders = {
 gb_factor = 2 / 5 if file_type == "parquet" else 11 / 10
 
 for sf in sorted(sfs):
-    st.markdown(f"## scale factor: {sf}")
+    st.markdown("## execution time per query")
     c = px.bar(
-        agg.filter(agg["sf"] == sf),
+        agg,
         x="query_number",
         y="mean_execution_seconds",
         log_y=log_y,
@@ -259,68 +259,23 @@ for sf in sorted(sfs):
     )
     st.plotly_chart(c)
 
-    all_systems = sorted(
-        agg.filter(agg["sf"] == sf)
-        .select("system")
-        .distinct()
-        .to_pandas()["system"]
-        .tolist()
+    st.markdown("## details by system and instance type")
+    agg2 = agg.group_by("system", "instance_type").agg(
+        present_queries=ibis._["query_number"].collect().unique().sort(),
+        total_mean_execution_seconds=ibis._["mean_execution_seconds"].sum(),
     )
-    all_queries = range(start_query, end_query + 1)
-
-    tabs = st.tabs(instance_types)
-
-    for i in range(len(tabs)):
-        with tabs[i]:
-            cols = st.columns(len(all_systems))
-            for system in sorted(
-                agg.filter(agg["sf"] == sf)
-                .filter(agg["instance_type"] == instance_types[i])
-                .select("system")
-                .distinct()
-                .to_pandas()["system"]
-                .tolist()
-            ):
-                queries_completed = (
-                    agg.filter(agg["sf"] == sf)
-                    .filter(agg["system"] == system)
-                    .filter(agg["instance_type"] == instance_types[i])
-                    .select("query_number")
-                    .distinct()
-                    .to_pandas()["query_number"]
-                    .tolist()
-                )
-
-                missing_queries = sorted(
-                    list(set(all_queries) - set(queries_completed))
-                )
-
-                total_runtime_seconds = (
-                    agg.filter(agg["sf"] == sf)
-                    .filter(agg["system"] == system)
-                    .filter(agg["instance_type"] == instance_types[i])[
-                        "mean_execution_seconds"
-                    ]
-                    .sum()
-                    .to_pandas()
-                )
-
-                with cols[all_systems.index(system)]:
-                    st.metric(
-                        label=f"{system} queries completed",
-                        value=f"{len(queries_completed)}/{len(all_queries)}",
-                    )
-                    st.metric(
-                        label=f"{system} total runtime seconds",
-                        value=round(
-                            total_runtime_seconds,
-                            2,
-                        ),
-                    )
-                    st.metric(
-                        label=f"{system} queries missing",
-                        value="\n".join([str(q) for q in missing_queries]),
-                        help="\n".join([str(q) for q in missing_queries]),
-                    )
-
+    agg2 = (
+        agg2.mutate(
+            failing_queries=t.distinct(on="query_number")["query_number"]
+            .collect()
+            .filter(lambda x: ~agg2["present_queries"].contains(x))
+        )
+        .mutate(
+            num_failing_queries=ibis._["failing_queries"].length(),
+            num_successful_queries=ibis._["present_queries"].length(),
+        )
+        .drop("present_queries")
+        .order_by("instance_type", "system")
+    )
+    st.dataframe(agg2, use_container_width=True)
     st.markdown("---")
