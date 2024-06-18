@@ -327,7 +327,7 @@ for sf in sorted(sfs):
     agg2 = agg2.join(instance_details, "instance_type")
     agg2 = (
         agg2.mutate(
-            failing_queries=t.distinct(on="query_number")["query_number"]
+            failing_queries=agg.distinct(on="query_number")["query_number"]
             .collect()
             .filter(lambda x: ~agg2["present_queries"].contains(x))
         )
