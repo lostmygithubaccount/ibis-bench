@@ -348,7 +348,7 @@ for sf in sorted(sfs):
         barmode="group",
         hover_data=["cpu_cores", "memory_gbs"],
         category_orders={
-            "system": all_systems,
+            "system": sorted(systems),
             "instance_type": reversed(instance_types),
         },
         title="completed queries",
