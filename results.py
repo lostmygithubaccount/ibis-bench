@@ -291,6 +291,7 @@ agg = (
         # ibis.asc("file_type"),
     )
 )
+agg = agg.join(instance_details, "instance_type")
 
 all_systems = sorted(t.select("system").distinct().to_pandas()["system"].tolist())
 
@@ -314,6 +315,7 @@ for sf in sorted(sfs):
         category_orders=category_orders,
         barmode="group",
         pattern_shape="instance_type",
+        hover_data=["cpu_cores", "memory_gbs"],
         title=f"scale factor: {sf} (~{sf}GB in memory | ~{round(sf * gb_factor, 2)}GB as {file_type})",
     )
     st.plotly_chart(c)
