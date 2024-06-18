@@ -318,7 +318,6 @@ for sf in sorted(sfs):
     )
     st.plotly_chart(c)
 
-    st.markdown("## details by system and instance type")
     agg2 = agg.group_by("system", "instance_type").agg(
         present_queries=ibis._["query_number"].collect().unique().sort(),
         total_mean_execution_seconds=ibis._["mean_execution_seconds"].sum(),
@@ -337,7 +336,6 @@ for sf in sorted(sfs):
         .drop("present_queries")
         .order_by(ibis.desc("memory_gbs"), "system")
     )
-    st.dataframe(agg2, use_container_width=True)
 
     st.markdown("## completed queries by system and instance type")
     c = px.bar(
@@ -354,5 +352,8 @@ for sf in sorted(sfs):
         title="completed queries",
     )
     st.plotly_chart(c)
+
+    st.markdown("## details by system and instance type")
+    st.dataframe(agg2, use_container_width=True)
 
     st.markdown("---")
