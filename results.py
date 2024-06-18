@@ -295,13 +295,13 @@ agg = agg.join(instance_details, "instance_type")
 
 all_systems = sorted(t.select("system").distinct().to_pandas()["system"].tolist())
 
-sfs = agg.select("sf").distinct().to_pandas()["sf"].tolist()
 category_orders = {
     "query_number": sorted(query_numbers),
     "system": sorted(all_systems),
     "instance_type": instance_types,
 }
 
+sfs = agg.select("sf").distinct().to_pandas()["sf"].tolist()
 gb_factor = 2 / 5 if file_type == "parquet" else 11 / 10
 
 for sf in sorted(sfs):
@@ -348,7 +348,7 @@ for sf in sorted(sfs):
         barmode="group",
         hover_data=["cpu_cores", "memory_gbs"],
         category_orders={
-            "system": systems,
+            "system": all_systems,
             "instance_type": reversed(instance_types),
         },
         title="completed queries",
