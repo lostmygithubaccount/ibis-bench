@@ -83,7 +83,67 @@ def get_t():
     return t
 
 
+def get_instance_details(t):
+    cpu_type_cases = (
+        ibis.case()
+        .when(
+            ibis._["instance_type"].startswith("n2d"),
+            "AMD EPYC",
+        )
+        .when(
+            ibis._["instance_type"].startswith("n2"),
+            "Intel Cascade and Ice Lake",
+        )
+        .when(
+            ibis._["instance_type"].startswith("c3"),
+            "Intel Saphire Rapids",
+        )
+        .when(
+            ibis._["instance_type"] == "work laptop",
+            "Apple M1 Max",
+        )
+        .when(
+            ibis._["instance_type"] == "personal laptop",
+            "Apple M2 Max",
+        )
+        .else_("unknown")
+        .end()
+    )
+    cpu_num_cases = (
+        ibis.case()
+        .when(
+            ibis._["instance_type"].contains("-"),
+            ibis._["instance_type"].split("-")[-1].cast("int"),
+        )
+        .when(ibis._["instance_type"].contains("laptop"), 12)
+        .else_(0)
+        .end()
+    )
+    memory_gb_cases = (
+        ibis.case()
+        .when(
+            ibis._["instance_type"].contains("-"),
+            ibis._["instance_type"].split("-")[-1].cast("int") * 4,
+        )
+        .when(ibis._["instance_type"] == "work laptop", 32)
+        .when(ibis._["instance_type"] == "personal laptop", 96)
+        .else_(0)
+        .end()
+    )
+
+    instance_details = (
+        t.group_by("instance_type")
+        .agg()
+        .mutate(
+            cpu_type=cpu_type_cases, cpu_cores=cpu_num_cases, memory_gbs=memory_gb_cases
+        )
+    ).order_by("memory_gbs", "cpu_cores", "instance_type")
+
+    return instance_details
+
+
 t = get_t()
+instance_details = get_instance_details(t)
 
 
 # streamlit viz beyond this point
@@ -141,7 +201,9 @@ with st.form(key="app"):
 
     instance_type_options = sorted(
         t.select("instance_type").distinct().to_pandas()["instance_type"].tolist(),
-        key=lambda x: (x.split("-")[0], int(x.split("-")[-1])) if "-" in x else (x, 0),
+        key=lambda x: (x.split("-")[0], int(x.split("-")[-1]))
+        if "-" in x
+        else ("z" + x[3], 0),
     )
     instance_types = st.multiselect(
         "select instance type(s)",
@@ -152,22 +214,18 @@ with st.form(key="app"):
             # if instance.startswith("n2d")
             instance
             for instance in instance_type_options
-            if "work laptop" in instance
+            if "laptop" in instance
         ],
         # default=instance_type_options,
     )
     instance_types = sorted(
         instance_types,
-        key=lambda x: (x.split("-")[0], int(x.split("-")[-1])) if "-" in x else (x, 0),
+        key=lambda x: (x.split("-")[0], int(x.split("-")[-1]))
+        if "-" in x
+        else ("z" + x[3], 0),
     )
 
-    # sfs options
     sfs = sorted(t.select("sf").distinct().to_pandas()["sf"].tolist())
-    # scale_factors = st.multiselect(
-    #    "select scale factor(s)",
-    #    sfs,
-    #    default=sfs,
-    # )
     scale_factor = st.radio(
         "select scale factor",
         sfs,
@@ -175,14 +233,15 @@ with st.form(key="app"):
     )
 
     # filetype options
-    filetype_options = sorted(
-        t.select("file_type").distinct().to_pandas()["file_type"].tolist()
-    )
-    file_type = st.radio(
-        "select file type",
-        filetype_options,
-        index=filetype_options.index("parquet") if "parquet" in filetype_options else 0,
-    )
+    # filetype_options = sorted(
+    #     t.select("file_type").distinct().to_pandas()["file_type"].tolist()
+    # )
+    # file_type = st.radio(
+    #     "select file type",
+    #     filetype_options,
+    #     index=filetype_options.index("parquet") if "parquet" in filetype_options else 0,
+    # )
+    file_type = "parquet"
 
     # query options
     query_numbers = sorted(
@@ -264,6 +323,7 @@ for sf in sorted(sfs):
         present_queries=ibis._["query_number"].collect().unique().sort(),
         total_mean_execution_seconds=ibis._["mean_execution_seconds"].sum(),
     )
+    agg2 = agg2.join(instance_details, "instance_type")
     agg2 = (
         agg2.mutate(
             failing_queries=t.distinct(on="query_number")["query_number"]
@@ -275,7 +335,24 @@ for sf in sorted(sfs):
             num_successful_queries=ibis._["present_queries"].length(),
         )
         .drop("present_queries")
-        .order_by("instance_type", "system")
+        .order_by(ibis.desc("memory_gbs"), "system")
     )
     st.dataframe(agg2, use_container_width=True)
+
+    st.markdown("## completed queries by system and instance type")
+    c = px.bar(
+        agg2,
+        x="system",
+        y="num_successful_queries",
+        color="instance_type",
+        barmode="group",
+        hover_data=["cpu_cores", "memory_gbs"],
+        category_orders={
+            "system": systems,
+            "instance_type": reversed(instance_types),
+        },
+        title="completed queries",
+    )
+    st.plotly_chart(c)
+
     st.markdown("---")
