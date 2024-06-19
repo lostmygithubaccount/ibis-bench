@@ -34,6 +34,12 @@ versions:
 details = details.strip()
 st.markdown(details)
 
+with open("results.py") as f:
+    code = f.read()
+
+with st.expander("Show source code for this page", expanded=False):
+    st.code(code, line_numbers=True, language="python")
+
 ibis.options.interactive = True
 ibis.options.repr.interactive.max_rows = 20
 ibis.options.repr.interactive.max_columns = None
