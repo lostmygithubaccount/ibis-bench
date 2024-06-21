@@ -258,6 +258,7 @@ with st.form(key="app"):
         options=query_numbers,
         value=(min(query_numbers), max(query_numbers)),
     )
+    query_numbers = list(range(start_query, end_query + 1))
 
     # log_y
     log_y = st.toggle("log y-axis", True)
