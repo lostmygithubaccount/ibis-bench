@@ -1,4 +1,7 @@
+import sys
 import streamlit as st
+
+sys.path.append("..")
 
 from results import get_t, get_instance_details
 
