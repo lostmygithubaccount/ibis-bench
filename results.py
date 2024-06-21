@@ -322,7 +322,7 @@ for sf in sorted(sfs):
         category_orders=category_orders,
         barmode="group",
         pattern_shape="instance_type",
-        hover_data=["cpu_cores", "memory_gbs"],
+        hover_data=["cpu_type", "cpu_cores", "memory_gbs"],
         title=f"scale factor: {sf} (~{sf}GB in memory | ~{round(sf * gb_factor, 2)}GB as {file_type})",
     )
     st.plotly_chart(c)
@@ -354,7 +354,7 @@ for sf in sorted(sfs):
         y="num_successful_queries",
         color="instance_type",
         barmode="group",
-        hover_data=["cpu_cores", "memory_gbs"],
+        hover_data=["cpu_type", "cpu_cores", "memory_gbs"],
         category_orders={
             "system": sorted(systems),
             "instance_type": reversed(instance_types),
