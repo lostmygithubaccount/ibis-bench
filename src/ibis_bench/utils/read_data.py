@@ -7,7 +7,7 @@ from ibis_bench.utils.gen_data import get_data_dir
 
 
 def get_ibis_tables(
-    sf, n_partitions=1, con=ibis.connect("duckdb://"), csv=False, decimal_to_float=True
+    sf, n_partitions=1, con=ibis.connect("duckdb://"), csv=False, decimal_to_float=False
 ):
     data_directory = get_data_dir(sf, n_partitions, csv=csv)
 
@@ -93,7 +93,7 @@ def get_ibis_tables(
     return customer, lineitem, nation, orders, part, partsupp, region, supplier
 
 
-def get_polars_tables(sf, n_partitions=1, lazy=True, csv=False, decimal_to_float=True):
+def get_polars_tables(sf, n_partitions=1, lazy=True, csv=False, decimal_to_float=False):
     import os
 
     # TODO: remove after Polars v1.0.0

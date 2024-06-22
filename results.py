@@ -215,12 +215,12 @@ with st.form(key="app"):
         "select instance type(s)",
         instance_type_options,
         default=[
-            # instance
-            # for instance in instance_type_options
-            # if instance.startswith("n2d")
             instance
             for instance in instance_type_options
-            if "laptop" in instance
+            if instance.startswith("n2d")
+            # instance
+            # for instance in instance_type_options
+            # if "laptop" in instance
         ],
         # default=instance_type_options,
     )
