@@ -4,6 +4,8 @@ st.set_page_config(layout="wide")
 st.title("Ibis benchmarking methodology")
 
 methodology = """
+See the [accompanying blog post](https://ibis-project.org/posts/ibis-bench) for more information.
+
 ## System naming convention
 
 For convenience, we define a hyphen-separated naming convention for the 'systems' we run on:
