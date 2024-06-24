@@ -20,7 +20,7 @@ polars_version = [d for d in dependencies if "polars" in d][0]
 ibis_version = [d for d in dependencies if "ibis" in d][0]
 
 details = f"""
-work in progress...
+[blog blog blog](https://ibis-project.org/posts/ibis-bench)
 
 the purpose of this dashboard is to compare TPC-H benchmarks across the big three single-node, Apache Arrow-based, modern OLAP engines: DuckDB, DataFusion, and Polars
 
