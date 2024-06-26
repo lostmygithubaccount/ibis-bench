@@ -47,7 +47,8 @@ release:
 
 # app
 app:
-    @streamlit run results.py
+    @streamlit run dev-app.py
+#@streamlit run results.py
 
 # open
 open:
