@@ -279,8 +279,8 @@ def q9(lineitem, nation, orders, part, partsupp, supplier, **kwargs):
             pl.col("n_name").alias("nation"),
             pl.col("o_orderdate").dt.year().alias("o_year"),
             (
-                    pl.col("l_extendedprice") * (1 - pl.col("l_discount"))
-                    - pl.col("ps_supplycost") * pl.col("l_quantity")
+                pl.col("l_extendedprice") * (1 - pl.col("l_discount"))
+                - pl.col("ps_supplycost") * pl.col("l_quantity")
             ).alias("amount"),
         )
         .group_by("nation", "o_year")
