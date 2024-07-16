@@ -1,4 +1,6 @@
-#find /dev/ | grep google-local-nvme-ssd
+sudo apt update && sudo apt install mdadm --no-install-recommends
+
+find /dev/ | grep google-local-nvme-ssd
 
 sudo mdadm --create /dev/md0 --level=0 --raid-devices=24 \
     /dev/disk/by-id/google-local-nvme-ssd-0 \
