@@ -5,8 +5,10 @@ set dotenv-load
 
 # variables
 instance_name := "ibis-bench"
-instance_type := "n2d-standard-2"
+instance_type := "c2d-highmem-112"
+#instance_type := "e2-medium"
 instance_zone := "us-central1-b"
+#instance_zone := "us-west1-c"
 
 gen_scale_factors := "-s 1 -s 8 -s 16 -s 32 -s 64 -s 128" 
 
@@ -94,13 +96,16 @@ logs-upload:
 
 # create vm
 vm-create:
-    gcloud compute instances create {{instance_name}} \
-        --zone={{instance_zone}} \
-        --machine-type={{instance_type}} \
-        --image=ubuntu-2004-focal-v20240519 \
-        --image-project=ubuntu-os-cloud \
-        --boot-disk-size=1000GB \
-        --boot-disk-type=pd-ssd
+    echo "no!"
+
+# gcloud compute instances create {{instance_name}} \
+#     --zone={{instance_zone}} \
+#     --machine-type={{instance_type}} \
+#     --image=ubuntu-2004-focal-v20240519 \
+#     --image-project=ubuntu-os-cloud \
+#     --network-interface=network-tier=PREMIUM,stack-type=IPV4_ONLY,subnet=default \
+#     --boot-disk-size=20000GB \
+#     --boot-disk-type=pd-extreme
 
 # ssh into vm
 vm-ssh:
