@@ -31,4 +31,6 @@ sudo mdadm --create /dev/md0 --level=0 --raid-devices=24 \
 sudo mkfs.ext4 -F /dev/md0
 
 sudo mkdir -p $HOME/nvme
+sudo mount /dev/md0 $HOME/nvme
+sudo chmod a+w $HOME/nvme
 
