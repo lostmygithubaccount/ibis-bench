@@ -24,12 +24,9 @@ build:
 
 # setup
 setup:
-    @pip install -r dev-requirements.txt
-    just install
-
-# install
-install:
-    @pip install -e .
+    @uv venv
+    @. .venv/bin/activate
+    @uv pip install -r dev-requirements.txt
 
 # format
 format:

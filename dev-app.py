@@ -50,7 +50,7 @@ px.defaults.template = "plotly_dark"
 
 def get_t():
     # ibis connection
-    #con = ibis.connect("duckdb://cache.ddb")
+    # con = ibis.connect("duckdb://cache.ddb")
     con = ibis.connect("duckdb://")
 
     # cloud logs
