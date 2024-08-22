@@ -7,7 +7,7 @@ set dotenv-load
 instance_name := "ibis-bench"
 instance_type := "c2d-highmem-112"
 #instance_type := "e2-medium"
-instance_zone := "us-central1-c"
+instance_zone := "us-central1-a"
 #instance_zone := "us-west1-c"
 
 gen_scale_factors := "-s 1 -s 8 -s 16 -s 32 -s 64 -s 128" 
