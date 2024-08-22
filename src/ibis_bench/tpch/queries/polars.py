@@ -107,15 +107,18 @@ def q4(lineitem, orders, **kwargs):
     var2 = date(1993, 10, 1)
 
     q_final = (
-        lineitem.join(orders, left_on="l_orderkey", right_on="o_orderkey")
+        # SQL exists translates to semi join in Polars API
+        orders.join(
+            (lineitem.filter(pl.col("l_commitdate") < pl.col("l_receiptdate"))),
+            left_on="o_orderkey",
+            right_on="l_orderkey",
+            how="semi",
+        )
         .filter(pl.col("o_orderdate").is_between(var1, var2, closed="left"))
-        .filter(pl.col("l_commitdate") < pl.col("l_receiptdate"))
-        .unique(subset=["o_orderpriority", "l_orderkey"])
         .group_by("o_orderpriority")
         .agg(pl.len().alias("order_count"))
         .sort("o_orderpriority")
     )
-
     return q_final
 
 
@@ -262,13 +265,13 @@ def q8(
 
 def q9(lineitem, nation, orders, part, partsupp, supplier, **kwargs):
     q_final = (
-        lineitem.join(supplier, left_on="l_suppkey", right_on="s_suppkey")
+        part.join(partsupp, left_on="p_partkey", right_on="ps_partkey")
+        .join(supplier, left_on="ps_suppkey", right_on="s_suppkey")
         .join(
-            partsupp,
-            left_on=["l_suppkey", "l_partkey"],
-            right_on=["ps_suppkey", "ps_partkey"],
+            lineitem,
+            left_on=["p_partkey", "ps_suppkey"],
+            right_on=["l_partkey", "l_suppkey"],
         )
-        .join(part, left_on="l_partkey", right_on="p_partkey")
         .join(orders, left_on="l_orderkey", right_on="o_orderkey")
         .join(nation, left_on="s_nationkey", right_on="n_nationkey")
         .filter(pl.col("p_name").str.contains("green"))
@@ -343,7 +346,7 @@ def q11(nation, partsupp, supplier, **kwargs):
     q2 = q1.select(
         (pl.col("ps_supplycost") * pl.col("ps_availqty")).sum().round(2).alias("tmp")
         * var2
-    ).with_columns(pl.lit(1).alias("lit"))
+    )
 
     q_final = (
         q1.group_by("ps_partkey")
@@ -353,8 +356,7 @@ def q11(nation, partsupp, supplier, **kwargs):
             .round(2)
             .alias("value")
         )
-        .with_columns(pl.lit(1).alias("lit"))
-        .join(q2, on="lit")
+        .join(q2, how="cross")
         .filter(pl.col("value") > pl.col("tmp"))
         .select("ps_partkey", "value")
         .sort("value", descending=True)
@@ -511,20 +513,22 @@ def q17(lineitem, part, **kwargs):
 def q18(customer, lineitem, orders, **kwargs):
     var1 = 300
 
-    q_final = (
+    q1 = (
         lineitem.group_by("l_orderkey")
         .agg(pl.col("l_quantity").sum().alias("sum_quantity"))
         .filter(pl.col("sum_quantity") > var1)
-        .select(pl.col("l_orderkey").alias("key"), pl.col("sum_quantity"))
-        .join(orders, left_on="key", right_on="o_orderkey")
-        .join(lineitem, left_on="key", right_on="l_orderkey")
+    )
+
+    q_final = (
+        orders.join(q1, left_on="o_orderkey", right_on="l_orderkey", how="semi")
+        .join(lineitem, left_on="o_orderkey", right_on="l_orderkey")
         .join(customer, left_on="o_custkey", right_on="c_custkey")
-        .group_by("c_name", "o_custkey", "key", "o_orderdate", "o_totalprice")
+        .group_by("c_name", "o_custkey", "o_orderkey", "o_orderdate", "o_totalprice")
         .agg(pl.col("l_quantity").sum().alias("col6"))
         .select(
             pl.col("c_name"),
             pl.col("o_custkey").alias("c_custkey"),
-            pl.col("key").alias("o_orderkey"),
+            pl.col("o_orderkey"),
             pl.col("o_orderdate").alias("o_orderdat"),
             pl.col("o_totalprice"),
             pl.col("col6"),
@@ -616,8 +620,8 @@ def q21(lineitem, nation, orders, supplier, **kwargs):
 
     q1 = (
         lineitem.group_by("l_orderkey")
-        .agg(pl.col("l_suppkey").n_unique().alias("nunique_col"))
-        .filter(pl.col("nunique_col") > 1)
+        .agg(pl.col("l_suppkey").len().alias("n_supp_by_order"))
+        .filter(pl.col("n_supp_by_order") > 1)
         .join(
             lineitem.filter(pl.col("l_receiptdate") > pl.col("l_commitdate")),
             on="l_orderkey",
@@ -626,12 +630,12 @@ def q21(lineitem, nation, orders, supplier, **kwargs):
 
     q_final = (
         q1.group_by("l_orderkey")
-        .agg(pl.col("l_suppkey").n_unique().alias("nunique_col"))
+        .agg(pl.col("l_suppkey").len().alias("n_supp_by_order"))
         .join(q1, on="l_orderkey")
         .join(supplier, left_on="l_suppkey", right_on="s_suppkey")
         .join(nation, left_on="s_nationkey", right_on="n_nationkey")
         .join(orders, left_on="l_orderkey", right_on="o_orderkey")
-        .filter(pl.col("nunique_col") == 1)
+        .filter(pl.col("n_supp_by_order") == 1)
         .filter(pl.col("n_name") == var1)
         .filter(pl.col("o_orderstatus") == "F")
         .group_by("s_name")
@@ -650,10 +654,8 @@ def q22(customer, orders, **kwargs):
         .select("c_acctbal", "c_custkey", "cntrycode")
     )
 
-    q2 = (
-        q1.filter(pl.col("c_acctbal") > 0.0)
-        .select(pl.col("c_acctbal").mean().alias("avg_acctbal"))
-        .with_columns(pl.lit(1).alias("lit"))
+    q2 = q1.filter(pl.col("c_acctbal") > 0.0).select(
+        pl.col("c_acctbal").mean().alias("avg_acctbal")
     )
 
     q3 = orders.select(pl.col("o_custkey").unique()).with_columns(
@@ -663,8 +665,7 @@ def q22(customer, orders, **kwargs):
     q_final = (
         q1.join(q3, on="c_custkey", how="left")
         .filter(pl.col("o_custkey").is_null())
-        .with_columns(pl.lit(1).alias("lit"))
-        .join(q2, on="lit")
+        .join(q2, how="cross")
         .filter(pl.col("c_acctbal") > pl.col("avg_acctbal"))
         .group_by("cntrycode")
         .agg(

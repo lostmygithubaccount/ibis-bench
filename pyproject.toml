@@ -30,6 +30,7 @@ dependencies = [
     'gcsfs',
     'plotly',
     'streamlit',
+    'great-tables',
 ]
 
 [project.urls]
