@@ -1,0 +1,61 @@
+---
+title: "Ibis benchmarking"
+about:
+  template: solana
+  links:
+    - icon: github
+      text: github
+      href: https://github.com/lostmygithubaccount/ibis-bench
+---
+
+***A composable data system benchmark in a Python package.***
+
+Ibis is an **interface**, not an **engine**. There's no such thing as a zero-cost abstraction with no overhead, but Ibis is designed to add as little as possible to your workloads while enabling you to scale with the best engines available. This repository is used to:
+
+- benchmark various engines via the same interface
+- roughly assess the overhead of using Ibis (by comparing with native queries)
+
+with a focus on the former and, currently, single-node OLAP engines.
+
+![Source: [Voltron Data Composable Codex](https://voltrondata.com/codex)](img/layers.png)
+
+## Benchmarks
+
+See the navbar.
+
+## Getting started
+
+You can reproduce the benchmark easily.
+
+### Installation
+
+::: {.panel-tabset}
+
+## Developer setup
+
+Install [`gh`](https://github.com/cli/cli) and [`just`](https://github.com/casey/just), then:
+
+```bash
+gh repo clone lostmygithubaccount/ibis-bench
+cd ibis-bench
+just setup
+. .venv/bin/activate
+```
+
+## Pip install
+
+Run:
+
+```bash
+pip install --upgrade ibis-bench
+```
+
+:::
+
+### Usage
+
+Use the CLI to run benchmarks.
+
+```bash
+bench
+```

@@ -24,12 +24,9 @@ build:
 
 # setup
 setup:
-    @pip install -r dev-requirements.txt
-    just install
-
-# install
-install:
-    @pip install -e .
+    @uv venv
+    @. .venv/bin/activate
+    @uv pip install -r dev-requirements.txt
 
 # format
 format:
@@ -47,7 +44,8 @@ release:
 
 # app
 app:
-    @streamlit run results.py
+    @streamlit run dev-app.py
+#@streamlit run results.py
 
 # open
 open:
@@ -143,3 +141,22 @@ clean-all:
     just clean-logs
     just clean-app
     just clean-results
+
+# docs preview
+docs-preview:
+    @quarto preview website
+
+# docs render
+docs-render:
+    @quarto render website
+
+# temp
+temp:
+    @bench tpch run ibis-duckdb ibis-datafusion polars-lazy -s 1 -s 2 -s 4 -s 8 -s 16 -s 32 -s 64 -s 128
+    @bench tpch run ibis-duckdb ibis-datafusion polars-lazy -s 1 -s 2 -s 4 -s 8 -s 16 -s 32 -s 64 -s 128 --decimal-to-float
+
+    @bench tpch run ibis-duckdb ibis-datafusion polars-lazy -s 1 -s 2 -s 4 -s 8 -s 16 -s 32 -s 64 -s 128
+    @bench tpch run ibis-duckdb ibis-datafusion polars-lazy -s 1 -s 2 -s 4 -s 8 -s 16 -s 32 -s 64 -s 128 --decimal-to-float
+    
+    @bench tpch run ibis-duckdb ibis-datafusion polars-lazy -s 1 -s 2 -s 4 -s 8 -s 16 -s 32 -s 64 -s 128
+    @bench tpch run ibis-duckdb ibis-datafusion polars-lazy -s 1 -s 2 -s 4 -s 8 -s 16 -s 32 -s 64 -s 128 --decimal-to-float

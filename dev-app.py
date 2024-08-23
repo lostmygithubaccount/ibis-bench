@@ -4,7 +4,6 @@ import tomllib
 import streamlit as st
 import plotly.express as px
 
-from great_tables import GT, md
 from ibis_bench.utils.monitor import get_cache_dir
 
 st.set_page_config(layout="wide")
@@ -51,8 +50,8 @@ px.defaults.template = "plotly_dark"
 
 def get_t():
     # ibis connection
-    con = ibis.connect("duckdb://cache.ddb")
-    # con = ibis.connect("duckdb://")
+    # con = ibis.connect("duckdb://cache.ddb")
+    con = ibis.connect("duckdb://")
 
     # cloud logs
     cloud = False
@@ -68,19 +67,22 @@ def get_t():
 
         glob = f"gs://{BUCKET}/{get_cache_dir()}/*.parquet"
     else:
-        glob = f"{get_cache_dir()}/*.parquet"
+        glob = f"bench_logs_v2/raw_json/*.json"
+
+    print(glob)
 
     # read data
     table_name = "bench_data"
     if table_name not in con.list_tables():
         t = (
-            con.read_parquet(glob)
+            con.read_json(glob)
             .mutate(
                 timestamp=ibis._["timestamp"].cast("timestamp"),
             )
             .drop("file_id")
             .distinct()  # TODO: hmmmmmm
             .filter(ibis._["file_type"] == "parquet")  # TODO: remove after CSV runs
+            .mutate(instance_type=ibis.literal("work laptop"))
             .cache()
         )
         con.create_table(table_name, t)
@@ -215,15 +217,15 @@ with st.form(key="app"):
     instance_types = st.multiselect(
         "select instance type(s)",
         instance_type_options,
-        default=[
-            instance
-            for instance in instance_type_options
-            if instance.startswith("n2d")
-            # instance
-            # for instance in instance_type_options
-            # if "laptop" in instance
-        ],
-        # default=instance_type_options,
+        # default=[
+        #     instance
+        #     for instance in instance_type_options
+        #     if instance.startswith("n2d")
+        #     # instance
+        #     # for instance in instance_type_options
+        #     # if "laptop" in instance
+        # ],
+        default=instance_type_options,
     )
     instance_types = sorted(
         instance_types,
@@ -288,14 +290,14 @@ agg = (
     .filter(t["query_number"] <= end_query)
     .group_by("system", "instance_type", "sf", "query_number")  # , "file_type")
     .agg(
-        avg_execution_seconds=t["execution_seconds"].mean(),
+        mean_execution_seconds=t["execution_seconds"].mean(),
     )
     .order_by(
         ibis.desc("sf"),
         ibis.asc("query_number"),
         ibis.desc("system"),
         ibis.desc("instance_type"),
-        ibis.asc("avg_execution_seconds"),
+        ibis.asc("mean_execution_seconds"),
         # ibis.asc("file_type"),
     )
 )
@@ -317,7 +319,7 @@ for sf in sorted(sfs):
     c = px.bar(
         agg,
         x="query_number",
-        y="avg_execution_seconds",
+        y="mean_execution_seconds",
         log_y=log_y,
         color="system",
         category_orders=category_orders,
@@ -330,7 +332,7 @@ for sf in sorted(sfs):
 
     agg2 = agg.group_by("system", "instance_type").agg(
         present_queries=ibis._["query_number"].collect().unique().sort(),
-        total_avg_execution_seconds=ibis._["avg_execution_seconds"].sum(),
+        total_mean_execution_seconds=ibis._["mean_execution_seconds"].sum(),
     )
     agg2 = agg2.join(instance_details, "instance_type")
     agg2 = (
@@ -368,135 +370,3 @@ for sf in sorted(sfs):
     st.dataframe(agg2, use_container_width=True)
 
     st.markdown("---")
-
-st.markdown("## comparison table")
-
-with st.form(key="comparison"):
-    compute_instance = st.radio(
-        "select a compute instance",
-        instance_types,
-        index=instance_types.index(instance_types[0]),
-    )
-    system_A = st.radio(
-        "select system A",
-        systems,
-        index=systems.index(systems[0]),
-    )
-    system_B = st.radio(
-        "select system B",
-        systems,
-        index=systems.index(systems[0]),
-    )
-    st.form_submit_button(label="update")
-
-
-systems = [system_A, system_B] if system_A != system_B else [system_A]
-
-agg = (
-    t.filter(t["system"].isin(systems))
-    .filter(t["instance_type"] == compute_instance)
-    .filter(t["sf"] == scale_factor)
-    .mutate(
-        run_num=ibis.row_number().over(
-            group_by=["system", "sf", "n_partitions", "query_number"],
-            order_by=["timestamp"],
-        )
-    )
-    .relocate(t.columns[:4], "run_num")
-    .group_by("system", "query_number", "run_num")
-    .agg(execution_seconds=ibis._["execution_seconds"].mean())
-    .order_by("system", "query_number", "run_num")
-)
-agg2 = (
-    agg.group_by("system", "query_number")
-    .agg(avg_execution_seconds=agg.execution_seconds.mean().round(2))
-    .order_by("system", "query_number")
-)
-piv = agg2.pivot_wider(
-    names_from="system", values_from=["avg_execution_seconds"]
-).order_by("query_number")
-
-
-def x_vs_y(piv, x, y):
-    return ibis.ifelse(
-        piv[x] < piv[y],
-        -1,
-        1,
-    ) * (
-        (
-            (piv[x] - piv[y])
-            / ibis.ifelse(
-                piv[y] > piv[x],
-                piv[x],
-                piv[y],
-            )
-        ).abs()
-    ).round(4)
-
-
-comparisons = [
-    (system_A, system_B),
-]
-
-comparisons = {f"{system_A}_v_{system_B}": x_vs_y(piv, system_A, system_B)}
-
-piv2 = piv.mutate(**comparisons)
-piv2 = piv2.order_by("query_number").relocate("query_number", systems)
-
-color_palette = "plasma"
-na_color = "black"
-style_color = "cyan"
-
-tbl = (
-    GT(
-        piv2.mutate(**{" ": ibis.literal("")})
-        .select(
-            "query_number",
-            *systems,
-            " ",
-            *list(comparisons.keys()),
-        )
-        .to_polars()
-    )
-    .opt_stylize(
-        style=1,
-        color=style_color,
-    )
-    .tab_header(
-        title=md(f"`sf={scale_factor}` TPC-H queries"),
-        subtitle=md(f"comparing {system_A} and {system_B} on {compute_instance}"),
-    )
-    .tab_spanner(label="execution time (seconds)", columns=systems)
-    .tab_spanner(label="   ", columns=" ")
-    .tab_spanner(label="relative speed difference†", columns=list(comparisons))
-    .tab_source_note(
-        source_note=md(
-            "†[Relative speed difference formula](https://docs.coiled.io/blog/tpch#measurements), with negative values indicating A was faster than B for A_v_B"
-        )
-    )
-    .fmt_percent(list(comparisons), decimals=2, scale_values=True)
-    .data_color(
-        columns=systems,
-        domain=[0, agg2["avg_execution_seconds"].max().to_pyarrow().as_py()],
-        palette=color_palette,
-        na_color=na_color,
-    )
-    .data_color(
-        columns=" ",
-        palette=["#333333", "#333333"],
-    )
-    .data_color(
-        columns=list(comparisons),
-        domain=[
-            min(
-                [piv2[c].min().to_pyarrow().as_py() for c in list(comparisons)],
-            ),
-            max(
-                [piv2[c].max().to_pyarrow().as_py() for c in list(comparisons)],
-            ),
-        ],
-        palette=color_palette,
-        na_color=na_color,
-    )
-)
-st.html(tbl.as_raw_html())

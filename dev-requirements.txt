@@ -2,3 +2,9 @@
 ruff
 build
 twine
+ipython
+jupyter
+nbclient
+ipykernel
+
+-r requirements.txt
