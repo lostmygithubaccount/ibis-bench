@@ -6,7 +6,7 @@ jupyter: python3
 import ibis
 
 from ibis_bench.tpcds.queries.ibis import *  # noqa
-from ibis_bench.tpcds.utils.read_data import get_ibis_tables
+from ibis_bench.tpcds.read_data import get_ibis_tables
 ```
 
 ```{python}

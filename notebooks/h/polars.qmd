@@ -7,7 +7,7 @@ import os
 import polars as pl
 
 from ibis_bench.tpch.queries.polars import *  # noqa
-from ibis_bench.tpch.utils.read_data import get_polars_tables
+from ibis_bench.tpch.read_data import get_polars_tables
 ```
 
 ```{python}

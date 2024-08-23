@@ -3,7 +3,7 @@ import polars as pl
 import ibis.selectors as s
 import polars.selectors as ps
 
-from ibis_bench.tpcds.utils.gen_data import get_data_dir
+from ibis_bench.tpcds.gen_data import get_data_dir
 
 
 def get_ibis_tables(

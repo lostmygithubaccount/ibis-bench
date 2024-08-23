@@ -7,15 +7,15 @@ from ibis_bench.utils.logging import log
 from ibis_bench.utils.monitor import monitor_it
 
 ## import tpch functions
-from ibis_bench.tpch.utils.gen_data import generate_data as tpch_generate_data
-from ibis_bench.tpch.utils.read_data import (
+from ibis_bench.tpch.gen_data import generate_data as tpch_generate_data
+from ibis_bench.tpch.read_data import (
     get_ibis_tables as tpch_get_ibis_tables,
     get_polars_tables as tpch_get_polars_tables,
 )
 
 ## import tpcds functions
-from ibis_bench.tpcds.utils.gen_data import generate_data as tpcds_generate_data
-# from ibis_bench.tpcds.utils.read_data import (
+from ibis_bench.tpcds.gen_data import generate_data as tpcds_generate_data
+# from ibis_bench.tpcds.read_data import (
 #     get_ibis_tables as tpcds_get_ibis_tables,
 #     get_polars_tables as tpcds_get_polars_tables,
 # )
