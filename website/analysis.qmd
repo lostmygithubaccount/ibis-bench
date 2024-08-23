@@ -4,6 +4,17 @@
 
 Work in progress. DataFusion and Polars have both had new releases. DataFusion via Ibis now completes on all queries.
 
+::: {.callout-tip title="Versions used"}
+
+Versions used in this analysis:
+
+- `ibis-framework @ git+https://github.com/ibis-project/ibis`
+- `duckdb==1.0.0`
+- `datafusion==40.1.0`
+- `polars==1.5.0`
+
+:::
+
 ::: {.callout-tip title="Show me the analysis code" collapse="true"}
 
 ```{python}
