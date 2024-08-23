@@ -50,7 +50,7 @@ app:
 
 # open
 open:
-    @open https://ibis-bench.streamlit.app
+    @open https://lostmygithubaccount.github.io/ibis-bench
 
 # gen parquet data
 gen-data:
