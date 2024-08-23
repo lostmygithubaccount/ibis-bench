@@ -4,7 +4,7 @@
 
 Work in progress. DataFusion and Polars have both had new releases. DataFusion via Ibis now completes on all queries.
 
-::: {.callout-tip title="Versions used"}
+::: {.callout-important title="Versions used"}
 
 Versions used in this analysis:
 
