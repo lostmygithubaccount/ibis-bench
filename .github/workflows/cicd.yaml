@@ -32,7 +32,9 @@ jobs:
       - uses: quarto-dev/quarto-actions/setup@v2
 
       - name: install requirements
-        run: just setup
+        run: |
+          pip install uv
+          just setup
 
       - name: build site
         run: |
