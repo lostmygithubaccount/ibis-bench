@@ -1,0 +1,582 @@
+{
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "::: {.column-screen-inset}\n",
+        "\n",
+        "# August 2024 -- ad hoc analysis\n",
+        "\n",
+        "Work in progress. DataFusion and Polars have both had new releases. DataFusion via Ibis now completes on all queries.\n"
+      ],
+      "id": "f2c56e8d"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "#| code-fold: True\n",
+        "#| echo: False\n",
+        "import os\n",
+        "\n",
+        "os.chdir(\"..\")"
+      ],
+      "id": "233d8eaf",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "::: {.callout-tip title=\"Show me the analysis code\" collapse=\"true\"}\n"
+      ],
+      "id": "9e999059"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "import ibis\n",
+        "import gcsfs\n",
+        "import ibis.selectors as s\n",
+        "import plotly.express as px\n",
+        "\n",
+        "ibis.options.interactive = True\n",
+        "ibis.options.repr.interactive.max_rows = 40\n",
+        "ibis.options.repr.interactive.max_length = 22\n",
+        "ibis.options.repr.interactive.max_columns = None\n",
+        "\n",
+        "px.defaults.template = \"plotly_dark\"\n",
+        "\n",
+        "fs = gcsfs.GCSFileSystem()\n",
+        "ibis.get_backend().register_filesystem(fs)"
+      ],
+      "id": "a9c4b7c9",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "def get_t(floats=False):\n",
+        "    t = (\n",
+        "        # ibis.read_json(\"bench_logs_v2/raw_json/file_id=*.json\")\n",
+        "        ibis.read_parquet(\"gs://ibis-bench/adhoc/2024-08-23/cache/file_id=*.parquet\")\n",
+        "        .mutate(\n",
+        "            timestamp=ibis._[\"timestamp\"].cast(\"timestamp\"),\n",
+        "            instance_type=ibis.literal(\"MacBook Pro (2021 Apple M1 Max 32GB)\"),\n",
+        "        )\n",
+        "        .filter(ibis._[\"floats\"] == floats)\n",
+        "    )\n",
+        "    return t"
+      ],
+      "id": "73aaea37",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "def get_sfs(t):\n",
+        "    sfs = sorted(t.distinct(on=\"sf\")[\"sf\"].to_pyarrow().to_pylist())\n",
+        "    return sfs"
+      ],
+      "id": "f8b55f52",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "def get_systems(t):\n",
+        "    systems = sorted(t.distinct(on=\"system\")[\"system\"].to_pyarrow().to_pylist())\n",
+        "    return systems"
+      ],
+      "id": "28649638",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "def get_instance_types(t):\n",
+        "    instance_types = sorted(\n",
+        "        t.distinct(on=\"instance_type\")[\"instance_type\"].to_pyarrow().to_pylist(),\n",
+        "        key=lambda x: (x.split(\"-\")[0], int(x.split(\"-\")[-1])) if \"-\" in x else (x, 0),\n",
+        "    )\n",
+        "    return instance_types"
+      ],
+      "id": "84b9da23",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "def get_query_numbers(t):\n",
+        "    query_numbers = sorted(\n",
+        "        t.distinct(on=\"query_number\")[\"query_number\"].to_pyarrow().to_pylist()\n",
+        "    )\n",
+        "    return query_numbers"
+      ],
+      "id": "1622ba6d",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "def get_failing_queries(t):\n",
+        "    fail = t.group_by(\"system\", \"sf\", \"floats\").agg(\n",
+        "        present_queries=ibis._[\"query_number\"].collect().unique().sort()\n",
+        "    )\n",
+        "    fail = (\n",
+        "        fail.mutate(\n",
+        "            failing_queries=t.distinct(on=\"query_number\")[\"query_number\"]\n",
+        "            .collect()\n",
+        "            .filter(lambda x: ~fail[\"present_queries\"].contains(x))\n",
+        "            .sort()\n",
+        "        )\n",
+        "        .mutate(num_failing_queries=ibis._[\"failing_queries\"].length())\n",
+        "        .drop(\"present_queries\")\n",
+        "        .order_by(ibis.desc(\"sf\"), \"system\")\n",
+        "    )\n",
+        "    return fail"
+      ],
+      "id": "dbd8a3b6",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "def get_agg(t):\n",
+        "    agg = (\n",
+        "        t.filter(t[\"sf\"] >= 1)\n",
+        "        # .filter((t[\"system\"].contains(\"duckdb\")) | (t[\"system\"].contains(\"datafusion\")))\n",
+        "        .group_by(\"instance_type\", \"system\", \"sf\", \"n_partitions\", \"query_number\")\n",
+        "        .agg(\n",
+        "            mean_execution_seconds=t[\"execution_seconds\"].mean(),\n",
+        "        )\n",
+        "        .order_by(\n",
+        "            ibis.asc(\"instance_type\"),\n",
+        "            ibis.desc(\"sf\"),\n",
+        "            ibis.asc(\"n_partitions\"),\n",
+        "            ibis.asc(\"query_number\"),\n",
+        "            ibis.desc(\"system\"),\n",
+        "            ibis.asc(\"mean_execution_seconds\"),\n",
+        "        )\n",
+        "    )\n",
+        "    return agg"
+      ],
+      "id": "ad52c95f",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "def get_totals(t):\n",
+        "    totals = (\n",
+        "        agg.filter(agg[\"sf\"] >= 1)\n",
+        "        .group_by(\"system\", \"sf\")\n",
+        "        .agg(total_execution_seconds=agg[\"mean_execution_seconds\"].sum())\n",
+        "        .order_by(\n",
+        "            ibis.desc(\"sf\"), ibis.desc(\"system\"), ibis.desc(\"total_execution_seconds\")\n",
+        "        )\n",
+        "    )\n",
+        "    return totals"
+      ],
+      "id": "e67cb1a3",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "def get_category_orders(t):\n",
+        "    category_orders = {\n",
+        "        \"query_number\": sorted(\n",
+        "            agg.select(\"query_number\").distinct().to_pandas()[\"query_number\"].tolist()\n",
+        "        ),\n",
+        "        \"system\": sorted(\n",
+        "            agg.select(\"system\").distinct().to_pandas()[\"system\"].tolist()\n",
+        "        ),\n",
+        "        \"instance_type\": sorted(\n",
+        "            agg.select(\"instance_type\")\n",
+        "            .distinct()\n",
+        "            .to_pandas()[\"instance_type\"]\n",
+        "            .tolist(),\n",
+        "            key=lambda x: (x.split(\"-\")[0], int(x.split(\"-\")[-1]))\n",
+        "            if \"-\" in x\n",
+        "            else (x, 0),\n",
+        "        ),\n",
+        "    }\n",
+        "    return category_orders"
+      ],
+      "id": "7cf1f9db",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "def totals_line(totals, log_y=False):\n",
+        "    px.line(\n",
+        "        totals.mutate(sf=ibis._[\"sf\"].log2()),\n",
+        "        x=\"sf\",\n",
+        "        y=\"total_execution_seconds\",\n",
+        "        color=\"system\",\n",
+        "        hover_name=\"system\",\n",
+        "        markers=True,\n",
+        "        log_y=log_y,\n",
+        "        title=\"total execution time by scale factor\",\n",
+        "        labels={\"sf\": \"log2(sf)\"},\n",
+        "        category_orders=category_orders,\n",
+        "    ).show()"
+      ],
+      "id": "83eddf14",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "def queries_bar(agg, sfs, category_orders):\n",
+        "    for sf in sorted(sfs):\n",
+        "        c = px.bar(\n",
+        "            agg.filter(agg[\"sf\"] == sf).filter(\n",
+        "                agg[\"instance_type\"].lower().contains(\"macbook\")\n",
+        "            ),\n",
+        "            x=\"query_number\",\n",
+        "            y=\"mean_execution_seconds\",\n",
+        "            color=\"system\",\n",
+        "            barmode=\"group\",\n",
+        "            log_y=True,\n",
+        "            # pattern_shape=\"instance_type\",\n",
+        "            category_orders=category_orders,\n",
+        "            title=f\"TPC-H scale factor {sf} (~{sf} GB in memory; ~{sf*2//5}GB on disk in Parquet) on MacBook Pro (2021 Apple M1 Max 32GB)\",\n",
+        "        )\n",
+        "        c.update_layout(\n",
+        "            legend=dict(orientation=\"h\", yanchor=\"top\", y=1.02, xanchor=\"right\", x=1)\n",
+        "        )\n",
+        "        c.show()\n",
+        "        print()"
+      ],
+      "id": "51c4a415",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        ":::\n",
+        "\n",
+        "::: {.callout-warning}\n",
+        "Polars fails on 9/22 queries because [you can't round on decimals yet](https://github.com/pola-rs/polars/issues/15151).\n",
+        "\n",
+        "We also run with decimals converted to floats to account for this and get a comparison.\n",
+        ":::\n",
+        "\n",
+        "## Decimals (original TPC-H data)\n"
+      ],
+      "id": "10a6fbea"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "t = get_t()\n",
+        "t.head()"
+      ],
+      "id": "a34e6911",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "sfs = get_sfs(t)\n",
+        "sfs"
+      ],
+      "id": "84714751",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "systems = get_systems(t)\n",
+        "systems"
+      ],
+      "id": "3bd31f6e",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "instance_types = get_instance_types(t)\n",
+        "instance_types"
+      ],
+      "id": "067b1263",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "query_numbers = get_query_numbers(t)\n",
+        "query_numbers"
+      ],
+      "id": "48e4231c",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "fail = get_failing_queries(t)\n",
+        "fail"
+      ],
+      "id": "5d9565a5",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "agg = get_agg(t)\n",
+        "agg"
+      ],
+      "id": "7dcaee4f",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "totals = get_totals(t)\n",
+        "totals"
+      ],
+      "id": "02194697",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "category_orders = get_category_orders(t)"
+      ],
+      "id": "a46f9b5f",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "totals_line(totals)"
+      ],
+      "id": "3188b98f",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "totals_line(totals, log_y=True)"
+      ],
+      "id": "c2d67474",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "queries_bar(agg, sfs, category_orders)"
+      ],
+      "id": "e126cc47",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Floats (TPC-H data with decimals casted to floats)\n"
+      ],
+      "id": "3a417967"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "t = get_t(floats=True)\n",
+        "t.head()"
+      ],
+      "id": "5ebf372e",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "sfs = get_sfs(t)\n",
+        "sfs"
+      ],
+      "id": "dbd77349",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "systems = get_systems(t)\n",
+        "systems"
+      ],
+      "id": "07df9322",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "instance_types = get_instance_types(t)\n",
+        "instance_types"
+      ],
+      "id": "2105eb27",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "query_numbers = get_query_numbers(t)\n",
+        "query_numbers"
+      ],
+      "id": "7b26ef43",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "fail = get_failing_queries(t)\n",
+        "fail"
+      ],
+      "id": "a3d6b753",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "agg = get_agg(t)\n",
+        "agg"
+      ],
+      "id": "e8c224f9",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "totals = get_totals(t)\n",
+        "totals"
+      ],
+      "id": "3de4856d",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "category_orders = get_category_orders(t)"
+      ],
+      "id": "6e3f3359",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "totals_line(totals)"
+      ],
+      "id": "ccfb51d5",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "totals_line(totals, log_y=True)"
+      ],
+      "id": "e8f8f9ab",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "queries_bar(agg, sfs, category_orders)"
+      ],
+      "id": "0f31621f",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        ":::"
+      ],
+      "id": "b873649d"
+    }
+  ],
+  "metadata": {
+    "kernelspec": {
+      "name": "python3",
+      "language": "python",
+      "display_name": "Python 3 (ipykernel)",
+      "path": "/Users/cody/repos/ibis-bench/.venv/share/jupyter/kernels/python3"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}

@@ -1,0 +1,40 @@
+project:
+  type: website
+  output-dir: _output
+
+# website
+website:
+  # basics
+  title: "Ibis benchmarking"
+  description: "Benchmarking query engines with a single query interface."
+  #favicon: logo.png
+  search: false
+
+  # options
+  reader-mode: false
+  twitter-card: true
+  back-to-top-navigation: true
+  repo-url: https://github.com/lostmygithubaccount/ibis-bench
+
+  # navbar
+  navbar: 
+    left:
+      - analysis.qmd
+      - text: "Querying 1TB on a laptop with Python dataframes"
+        href: https://ibis-project.org/posts/1tbc
+      - text: "First Ibis benchmarking report"
+        href: https://ibis-project.org/posts/ibis-bench
+
+  # footer
+  page-footer:
+    border: false
+    center: "Ibis benchmarking"
+    right:
+      - icon: github
+        href: https://github.com/lostmygithubaccount/ibis-bench
+
+# theme
+format:
+  html:
+    theme: darkly
+    toc: true

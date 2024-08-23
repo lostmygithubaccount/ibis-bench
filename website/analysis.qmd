@@ -1,14 +1,8 @@
----
-theme: darkly
----
-
 ::: {.column-screen-inset}
 
-## Updated `ibis-bench` results
+# August 2024 -- ad hoc analysis
 
-Work in progress. Only one instance type (work laptop).
-
-Mainly trying out decimals vs floats and getting numbers for DataFusion since all queries now work via Ibis.
+Work in progress. DataFusion and Polars have both had new releases. DataFusion via Ibis now completes on all queries.
 
 ::: {.callout-tip title="Show me the analysis code" collapse="true"}
 
@@ -24,17 +18,22 @@ ibis.options.repr.interactive.max_length = 22
 ibis.options.repr.interactive.max_columns = None
 
 px.defaults.template = "plotly_dark"
+
+fs = gcsfs.GCSFileSystem()
+ibis.get_backend().register_filesystem(fs)
 ```
 
 ```{python}
 def get_t(floats=False):
     t = (
-        ibis.read_json("bench_logs_v2/raw_json/file_id=*.json")
+        # ibis.read_json("bench_logs_v2/raw_json/file_id=*.json")
+        ibis.read_parquet("gs://ibis-bench/adhoc/2024-08-23/cache/file_id=*.parquet")
         .mutate(
             timestamp=ibis._["timestamp"].cast("timestamp"),
             instance_type=ibis.literal("MacBook Pro (2021 Apple M1 Max 32GB)"),
         )
         .filter(ibis._["floats"] == floats)
+        .distinct()
     )
     return t
 ```
@@ -145,7 +144,7 @@ def get_category_orders(t):
 
 ```{python}
 def totals_line(totals, log_y=False):
-    return px.line(
+    px.line(
         totals.mutate(sf=ibis._["sf"].log2()),
         x="sf",
         y="total_execution_seconds",
@@ -156,7 +155,7 @@ def totals_line(totals, log_y=False):
         title="total execution time by scale factor",
         labels={"sf": "log2(sf)"},
         category_orders=category_orders,
-    )
+    ).show()
 ```
 
 ```{python}
@@ -184,7 +183,11 @@ def queries_bar(agg, sfs, category_orders):
 
 :::
 
-::: {.panel-tabset}
+::: {.callout-warning}
+Polars fails on 9/22 queries because [you can't round on decimals yet](https://github.com/pola-rs/polars/issues/15151).
+
+We also run with decimals converted to floats to account for this and get a comparison.
+:::
 
 ## Decimals (original TPC-H data)
 
@@ -301,6 +304,5 @@ totals_line(totals, log_y=True)
 ```{python}
 queries_bar(agg, sfs, category_orders)
 ```
-
 
 :::
