@@ -1,7 +1,7 @@
-dist
-venv
 .tmp
 .env
+.venv
+dist
 __pycache__
 *.parquet
 results_data
@@ -10,3 +10,5 @@ tpcds_data
 bench*log*
 ibis_bench.log
 out.log
+
+analysis_files

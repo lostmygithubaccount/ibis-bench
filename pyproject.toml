@@ -29,6 +29,7 @@ dependencies = [
     'psutil',
     'gcsfs',
     'plotly',
+    'kaleido',
     'streamlit',
     'great-tables',
 ]

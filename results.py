@@ -55,7 +55,7 @@ def get_t():
     # con = ibis.connect("duckdb://")
 
     # cloud logs
-    cloud = True
+    cloud = False
 
     if cloud:
         PROJECT = "voltrondata-demo"

@@ -83,6 +83,9 @@ def tpch_run(
     use_csv: bool = typer.Option(
         False, "--csv", "-c", help="use CSV files instead of parquet"
     ),
+    decimal_to_float: bool = typer.Option(
+        False, "--decimal-to-float", "-d", help="convert decimal to float"
+    ),
     instance_type: str = typer.Option(
         None, "--instance-type", "-i", help="instance type"
     ),
@@ -114,7 +117,11 @@ def tpch_run(
                         region,
                         supplier,
                     ) = tpch_get_ibis_tables(
-                        sf=sf, n_partitions=n, con=con, csv=use_csv
+                        sf=sf,
+                        n_partitions=n,
+                        con=con,
+                        csv=use_csv,
+                        decimal_to_float=decimal_to_float,
                     )
                 elif system_parts[0] == "ibis" and system_parts[-1] == "sql":
                     backend = system_parts[1]
@@ -133,7 +140,11 @@ def tpch_run(
                         region,
                         supplier,
                     ) = tpch_get_ibis_tables(
-                        sf=sf, n_partitions=n, con=con, csv=use_csv
+                        sf=sf,
+                        n_partitions=n,
+                        con=con,
+                        csv=use_csv,
+                        decimal_to_float=decimal_to_float,
                     )
                 elif system_parts[0] == "polars":
                     backend = system_parts[0]
@@ -152,7 +163,11 @@ def tpch_run(
                         region,
                         supplier,
                     ) = tpch_get_polars_tables(
-                        sf=sf, n_partitions=n, lazy=lazy, csv=use_csv
+                        sf=sf,
+                        n_partitions=n,
+                        lazy=lazy,
+                        csv=use_csv,
+                        decimal_to_float=decimal_to_float,
                     )
 
                 queries = {
@@ -173,6 +188,7 @@ def tpch_run(
                             session_id=session_id,
                             instance_type=instance_type,
                             use_csv=use_csv,
+                            decimal_to_float=decimal_to_float,
                             # tpch tables
                             customer=customer,
                             lineitem=lineitem,

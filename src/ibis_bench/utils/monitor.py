@@ -46,6 +46,7 @@ def monitor_it(
     session_id: str,
     instance_type: str,
     use_csv: bool,
+    decimal_to_float: bool,
     *args,
     **kwargs,
 ):
@@ -69,6 +70,7 @@ def monitor_it(
         "query_number": query_number,
         "execution_seconds": elapsed_time,
         "file_type": "csv" if use_csv else "parquet",
+        "floats": decimal_to_float,
     }
 
     write_monitor_results(data)

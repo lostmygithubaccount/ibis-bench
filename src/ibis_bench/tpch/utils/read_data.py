@@ -5,9 +5,11 @@ import polars.selectors as ps
 
 from ibis_bench.utils.gen_data import get_data_dir
 
+DECIMAL_TO_FLOAT = True
+
 
 def get_ibis_tables(
-    sf, n_partitions=1, con=ibis.connect("duckdb://"), csv=False, decimal_to_float=False
+    sf, n_partitions=1, con=ibis.connect("duckdb://"), csv=False, decimal_to_float=True
 ):
     data_directory = get_data_dir(sf, n_partitions, csv=csv)
 
@@ -93,13 +95,9 @@ def get_ibis_tables(
     return customer, lineitem, nation, orders, part, partsupp, region, supplier
 
 
-def get_polars_tables(sf, n_partitions=1, lazy=True, csv=False, decimal_to_float=False):
-    import os
-
-    # TODO: remove after Polars v1.0.0
-    os.environ["POLARS_ACTIVATE_DECIMAL"] = (
-        "1"  # https://github.com/pola-rs/polars/issues/16603#issuecomment-2141701041
-    )
+def get_polars_tables(
+    sf, n_partitions=1, lazy=True, csv=False, decimal_to_float=DECIMAL_TO_FLOAT
+):
     data_directory = get_data_dir(sf, n_partitions, csv=csv)
 
     if not csv:
@@ -156,16 +154,16 @@ def get_polars_tables(sf, n_partitions=1, lazy=True, csv=False, decimal_to_float
         supplier = _decimal_to_float(supplier)
 
     # TODO: keep this or figure something out and remove
-    def _drop_hive_cols(df):
-        return df.drop(["sf", "n"])
+    # def _drop_hive_cols(df):
+    #     return df.drop(["sf", "n"])
 
-    customer = _drop_hive_cols(customer)
-    lineitem = _drop_hive_cols(lineitem)
-    nation = _drop_hive_cols(nation)
-    orders = _drop_hive_cols(orders)
-    part = _drop_hive_cols(part)
-    partsupp = _drop_hive_cols(partsupp)
-    region = _drop_hive_cols(region)
-    supplier = _drop_hive_cols(supplier)
+    # customer = _drop_hive_cols(customer)
+    # lineitem = _drop_hive_cols(lineitem)
+    # nation = _drop_hive_cols(nation)
+    # orders = _drop_hive_cols(orders)
+    # part = _drop_hive_cols(part)
+    # partsupp = _drop_hive_cols(partsupp)
+    # region = _drop_hive_cols(region)
+    # supplier = _drop_hive_cols(supplier)
 
     return customer, lineitem, nation, orders, part, partsupp, region, supplier

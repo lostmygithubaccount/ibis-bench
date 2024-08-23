@@ -141,3 +141,12 @@ clean-all:
     just clean-logs
     just clean-app
     just clean-results
+
+temp:
+    @bench tpch run ibis-duckdb ibis-datafusion polars-lazy -s 1 -s 2 -s 4 -s 8 -s 16 -s 32 -s 64 -s 128
+    @bench tpch run ibis-duckdb ibis-datafusion polars-lazy -s 1 -s 2 -s 4 -s 8 -s 16 -s 32 -s 64 -s 128
+    @bench tpch run ibis-duckdb ibis-datafusion polars-lazy -s 1 -s 2 -s 4 -s 8 -s 16 -s 32 -s 64 -s 128
+
+    @bench tpch run ibis-duckdb ibis-datafusion polars-lazy -s 1 -s 2 -s 4 -s 8 -s 16 -s 32 -s 64 -s 128 --decimal-to-float
+    @bench tpch run ibis-duckdb ibis-datafusion polars-lazy -s 1 -s 2 -s 4 -s 8 -s 16 -s 32 -s 64 -s 128 --decimal-to-float
+    @bench tpch run ibis-duckdb ibis-datafusion polars-lazy -s 1 -s 2 -s 4 -s 8 -s 16 -s 32 -s 64 -s 128 --decimal-to-float
