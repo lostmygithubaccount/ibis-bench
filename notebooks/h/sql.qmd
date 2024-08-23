@@ -1,0 +1,302 @@
+---
+jupyter: python3
+---
+
+```{python}
+import ibis
+
+from ibis_bench.queries.sql import *  # noqa
+from ibis_bench.utils.read_data import get_ibis_tables
+```
+
+```{python}
+ibis.options.interactive = True
+```
+
+```{python}
+backend = "datafusion"
+con = ibis.connect(f"{backend}://")
+```
+
+```{python}
+sf = 1
+n_partitions = 1
+
+customer, lineitem, nation, orders, part, partsupp, region, supplier = get_ibis_tables(
+    sf=sf, n_partitions=n_partitions, con=con
+)
+```
+
+```{python}
+res = q16(
+    customer=customer,
+    lineitem=lineitem,
+    nation=nation,
+    orders=orders,
+    part=part,
+    partsupp=partsupp,
+    region=region,
+    supplier=supplier,
+    dialect=backend,
+)
+res
+```
+
+
+
+
+
+```{python}
+import datafusion
+```
+
+```{python}
+ctx = datafusion.SessionContext()
+ctx.register_parquet(
+    "part", "/Users/cody/repos/ibis-bench/tpch_data/parquet/sf=1/n=1/part/0000.parquet"
+)
+ctx.register_parquet(
+    "partsupp",
+    "/Users/cody/repos/ibis-bench/tpch_data/parquet/sf=1/n=1/partsupp/0000.parquet",
+)
+ctx.register_parquet(
+    "supplier",
+    "/Users/cody/repos/ibis-bench/tpch_data/parquet/sf=1/n=1/supplier/0000.parquet",
+)
+```
+
+```{python}
+sql = """
+select
+    p_brand,
+    p_type,
+    p_size,
+    count(distinct ps_suppkey) as supplier_cnt
+from
+    partsupp,
+    part
+where
+        p_partkey = ps_partkey
+  and p_brand <> 'Brand#45'
+  and p_type not like 'MEDIUM POLISHED%'
+  and p_size in (49, 14, 23, 45, 19, 3, 36, 9)
+  and ps_suppkey not in (
+    select
+        s_suppkey
+    from
+        supplier
+    where
+            s_comment like '%Customer%Complaints%'
+)
+group by
+    p_brand,
+    p_type,
+    p_size
+order by
+    supplier_cnt desc,
+    p_brand,
+    p_type,
+    p_size;
+"""
+sql = sql.strip()
+```
+
+```{python}
+sql = """
+SELECT
+    p_brand,
+    p_type,
+    p_size,
+    count(DISTINCT ps_suppkey) AS supplier_cnt
+FROM
+    partsupp,
+    part
+WHERE
+    p_partkey = ps_partkey
+    AND p_brand <> 'Brand#45'
+    AND p_type NOT LIKE 'MEDIUM POLISHED%'
+    AND p_size IN (49, 14, 23, 45, 19, 3, 36, 9)
+    AND ps_suppkey NOT IN (
+        SELECT
+            s_suppkey
+        FROM
+            supplier
+        WHERE
+            s_comment LIKE '%Customer%Complaints%')
+GROUP BY
+    p_brand,
+    p_type,
+    p_size
+ORDER BY
+    supplier_cnt DESC,
+    p_brand,
+    p_type,
+    p_size;
+"""
+sql = sql.strip()
+```
+
+```{python}
+import sqlglot
+
+sql = sqlglot.transpile(sql, "duckdb", "postgres", pretty=True)[0]
+print(sql)
+```
+
+```{python}
+ctx.sql(sql).collect()
+```
+
+```{python}
+ctx.register_parquet?
+```
+
+```{python}
+# let's reproduce the error caused by this SQL but w/ more simple data:
+# SELECT
+#   p_brand,
+#   p_type,
+#   p_size,
+#   COUNT(DISTINCT ps_suppkey) AS supplier_cnt
+# FROM partsupp, part
+# WHERE
+#   p_partkey = ps_partkey
+#   AND p_brand <> 'Brand#45'
+#   AND NOT p_type LIKE 'MEDIUM POLISHED%'
+#   AND p_size IN (49, 14, 23, 45, 19, 3, 36, 9)
+#   AND NOT ps_suppkey IN (
+#     SELECT
+#       s_suppkey
+#     FROM supplier
+#     WHERE
+#       s_comment LIKE '%Customer%Complaints%'
+#   )
+# GROUP BY
+#   p_brand,
+#   p_type,
+#   p_size
+# ORDER BY
+#   supplier_cnt DESC NULLS LAST,
+#   p_brand,
+#   p_type,
+
+# the error is the NOT col IN () instead of col NOT IN ()
+
+```
+
+```{python}
+import datafusion
+
+ctx = datafusion.SessionContext()
+```
+
+```{python}
+tables = {
+    "part": {
+        "p_partkey": [1, 2, 3, 4, 5],
+        "p_brand": ["Brand#45", "Brand#45", "Brand#46", "Brand#47", "Brand#48"],
+        "p_type": [
+            "MEDIUM POLISHED",
+            "MEDIUM POLISHED",
+            "MEDIUM POLISHED",
+            "MEDIUM POLISHED",
+            "MEDIUM POLISHED",
+        ],
+        "p_size": [49, 14, 23, 45, 19],
+    },
+    "partsupp": {
+        "ps_partkey": [1, 2, 3, 4, 5],
+        "ps_suppkey": [1, 2, 3, 4, 5],
+    },
+    "supplier": {
+        "s_suppkey": [1, 2, 3, 4, 5],
+        "s_comment": [
+            "Customer Complaints",
+            "Customer Complaints",
+            "Customer Complaints",
+            "Customer Complaints",
+            "Customer Complaints",
+        ],
+    },
+}
+
+for table_name, data in tables.items():
+    ctx.from_pydict(data, name=table_name)
+```
+
+```{python}
+sqlA = """
+select
+    p_brand,
+    p_type,
+    p_size,
+    count(distinct ps_suppkey) as supplier_cnt
+from
+    partsupp,
+    part
+where
+        p_partkey = ps_partkey
+  and p_brand <> 'Brand#45'
+  and p_type not like 'MEDIUM POLISHED%'
+  and p_size in (49, 14, 23, 45, 19, 3, 36, 9)
+  and ps_suppkey not in (
+    select
+        s_suppkey
+    from
+        supplier
+    where
+            s_comment like '%Customer%Complaints%'
+)
+group by
+    p_brand,
+    p_type,
+    p_size
+order by
+    supplier_cnt desc,
+    p_brand,
+    p_type,
+    p_size;
+"""
+```
+
+```{python}
+ctx.sql(sqlA).collect()
+```
+
+```{python}
+sqlB = """
+SELECT
+  p_brand,
+  p_type,
+  p_size,
+  COUNT(DISTINCT ps_suppkey) AS supplier_cnt
+FROM partsupp, part
+WHERE
+  p_partkey = ps_partkey
+  AND p_brand <> 'Brand#45'
+  AND NOT p_type LIKE 'MEDIUM POLISHED%'
+  AND p_size IN (49, 14, 23, 45, 19, 3, 36, 9)
+  AND NOT ps_suppkey IN (
+    SELECT
+      s_suppkey
+    FROM supplier
+    WHERE
+      s_comment LIKE '%Customer%Complaints%'
+  )
+GROUP BY
+  p_brand,
+  p_type,
+  p_size
+ORDER BY
+  supplier_cnt DESC NULLS LAST,
+  p_brand,
+  p_type,
+  p_size;
+"""
+```
+
+```{python}
+ctx.sql(sqlB).collect()
+```
+
+

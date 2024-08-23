@@ -1,0 +1,162 @@
+---
+jupyter: python3
+---
+
+```{python}
+import os
+import polars as pl
+
+from ibis_bench.tpch.queries.polars import *  # noqa
+from ibis_bench.tpch.utils.read_data import get_polars_tables
+```
+
+```{python}
+# https://github.com/pola-rs/polars/issues/4104#issuecomment-1484830343
+pl.Config.activate_decimals()
+
+# TODO: remove after Polars v1.0.0
+os.environ["POLARS_ACTIVATE_DECIMAL"] = (
+    "1"  # https://github.com/pola-rs/polars/issues/16603#issuecomment-2141701041
+)
+```
+
+```{python}
+sf = 1
+n_partitions = 1
+csv = False
+lazy = True
+streaming = False
+
+customer, lineitem, nation, orders, part, partsupp, region, supplier = (
+    get_polars_tables(sf=sf, n_partitions=n_partitions, lazy=lazy)
+)
+```
+
+```{python}
+customer.limit(5).collect()
+```
+
+```{python}
+customer.select(pl.col("c_acctbal").round(1)).limit(5).collect()
+```
+
+```{python}
+customer.select("c_acctbal").collect()["c_acctbal"].dtype
+```
+
+```{python}
+# failing: 6, 8-11, 15, 19, 22
+res = q8(
+    customer=customer,
+    nation=nation,
+    lineitem=lineitem,
+    orders=orders,
+    region=region,
+    part=part,
+    partsupp=partsupp,
+    supplier=supplier,
+)
+res.collect(streaming=streaming)
+```
+
+```{python}
+res.schema
+```
+
+```{python}
+import os
+import ibis
+import polars as pl
+
+os.environ["POLARS_VERBOSE"] = "1"
+```
+
+```{python}
+con = ibis.get_backend()
+con.raw_sql("call dbgen(sf=1)")
+
+for table in con.list_tables():
+    con.table(table).to_parquet(f"{table}.parquet")
+```
+
+```{python}
+# https://github.com/pola-rs/polars/issues/4104#issuecomment-1484830343
+pl.Config.activate_decimals()
+
+# TODO: remove after Polars v1.0.0
+# os.environ["POLARS_ACTIVATE_DECIMAL"] = (
+#     "1"  # https://github.com/pola-rs/polars/issues/16603#issuecomment-2141701041
+# )
+```
+
+```{python}
+from datetime import date
+
+
+def q8(
+    customer,
+    lineitem,
+    nation,
+    orders,
+    part,
+    region,
+    supplier,
+    **kwargs,
+):
+    var1 = "BRAZIL"
+    var2 = "AMERICA"
+    var3 = "ECONOMY ANODIZED STEEL"
+    var4 = date(1995, 1, 1)
+    var5 = date(1996, 12, 31)
+
+    n1 = nation.select("n_nationkey", "n_regionkey")
+    n2 = nation.select("n_nationkey", "n_name")
+
+    q_final = (
+        part.join(lineitem, left_on="p_partkey", right_on="l_partkey")
+        .join(supplier, left_on="l_suppkey", right_on="s_suppkey")
+        .join(orders, left_on="l_orderkey", right_on="o_orderkey")
+        .join(customer, left_on="o_custkey", right_on="c_custkey")
+        .join(n1, left_on="c_nationkey", right_on="n_nationkey")
+        .join(region, left_on="n_regionkey", right_on="r_regionkey")
+        .filter(pl.col("r_name") == var2)
+        .join(n2, left_on="s_nationkey", right_on="n_nationkey")
+        .filter(pl.col("o_orderdate").is_between(var4, var5))
+        .filter(pl.col("p_type") == var3)
+        .select(
+            pl.col("o_orderdate").dt.year().alias("o_year"),
+            (pl.col("l_extendedprice") * (1 - pl.col("l_discount"))).alias("volume"),
+            pl.col("n_name").alias("nation"),
+        )
+        .with_columns(
+            pl.when(pl.col("nation") == var1)
+            .then(pl.col("volume"))
+            .otherwise(0)
+            .alias("_tmp")
+        )
+        .group_by("o_year")
+        .agg((pl.sum("_tmp") / pl.sum("volume")).round(2).alias("mkt_share"))
+        .sort("o_year")
+    )
+
+    return q_final
+```
+
+```{python}
+res = q8(
+    customer=pl.scan_parquet("customer.parquet"),
+    lineitem=pl.scan_parquet("lineitem.parquet"),
+    nation=pl.scan_parquet("nation.parquet"),
+    orders=pl.scan_parquet("orders.parquet"),
+    part=pl.scan_parquet("part.parquet"),
+    region=pl.scan_parquet("region.parquet"),
+    supplier=pl.scan_parquet("supplier.parquet"),
+)
+res.collect()
+```
+
+```{python}
+pl.show_versions()
+```
+
+

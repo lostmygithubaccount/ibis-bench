@@ -1,0 +1,138 @@
+---
+jupyter: python3
+---
+
+```{python}
+import ibis
+
+from ibis_bench.tpcds.queries.ibis import *  # noqa
+from ibis_bench.tpcds.utils.read_data import get_ibis_tables
+```
+
+```{python}
+ibis.options.interactive = True
+```
+
+```{python}
+backend = "duckdb"
+con = ibis.connect(f"{backend}://")
+```
+
+```{python}
+sf = 8
+csv = False
+
+all_tables = (
+    call_center,
+    catalog_page,
+    catalog_returns,
+    catalog_sales,
+    customer,
+    customer_address,
+    customer_demographics,
+    date_dim,
+    household_demographics,
+    income_band,
+    inventory,
+    item,
+    promotion,
+    reason,
+    ship_mode,
+    store,
+    store_returns,
+    store_sales,
+    time_dim,
+    warehouse,
+    web_page,
+    web_returns,
+    web_sales,
+    web_site,
+) = get_ibis_tables(sf=sf, con=con, csv=csv)
+```
+
+```{python}
+res = q1(
+    call_center=call_center,
+    catalog_page=catalog_page,
+    catalog_returns=catalog_returns,
+    catalog_sales=catalog_sales,
+    customer=customer,
+    customer_address=customer_address,
+    customer_demographics=customer_demographics,
+    date_dim=date_dim,
+    household_demographics=household_demographics,
+    income_band=income_band,
+    inventory=inventory,
+    item=item,
+    promotion=promotion,
+    reason=reason,
+    ship_mode=ship_mode,
+    store=store,
+    store_returns=store_returns,
+    store_sales=store_sales,
+    time_dim=time_dim,
+    warehouse=warehouse,
+    web_page=web_page,
+    web_returns=web_returns,
+    web_sales=web_sales,
+    web_site=web_site,
+)
+res
+```
+
+```{python}
+res.schema()
+```
+
+```{python}
+import sqlglot
+
+sql = res.compile()
+sql = sqlglot.transpile(sql, "datafusion", "datafusion", pretty=True)[0]
+print(sql)
+```
+
+```{python}
+res = q21(
+    customer=customer,
+    lineitem=lineitem,
+    nation=nation,
+    orders=orders,
+    part=part,
+    partsupp=partsupp,
+    region=region,
+    supplier=supplier,
+)
+```
+
+```{python}
+import sqlglot
+
+sql = res.compile()
+sql = sqlglot.transpile(sql, "datafusion", "datafusion", pretty=True)[0]
+print(sql)
+```
+
+```{python}
+res = q22(
+    customer=customer,
+    lineitem=lineitem,
+    nation=nation,
+    orders=orders,
+    part=part,
+    partsupp=partsupp,
+    region=region,
+    supplier=supplier,
+)
+res
+```
+
+```{python}
+import sqlglot
+
+sql = res.compile()
+sql = sqlglot.transpile(sql, "datafusion", "datafusion", pretty=True)[0]
+print(sql)
+```
+
+

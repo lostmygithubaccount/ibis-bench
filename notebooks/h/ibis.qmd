@@ -1,0 +1,100 @@
+---
+jupyter: python3
+---
+
+```{python}
+import ibis
+
+from ibis_bench.queries.ibis import *  # noqa
+from ibis_bench.utils.read_data import get_ibis_tables
+```
+
+```{python}
+ibis.options.interactive = True
+```
+
+```{python}
+backend = "polars"
+con = ibis.connect(f"{backend}://")
+```
+
+```{python}
+sf = 8
+n_partitions = 1
+csv = False
+
+customer, lineitem, nation, orders, part, partsupp, region, supplier = get_ibis_tables(
+    sf=sf, n_partitions=n_partitions, con=con, csv=csv
+)
+```
+
+```{python}
+res = q1(
+    customer=customer,
+    lineitem=lineitem,
+    nation=nation,
+    orders=orders,
+    part=part,
+    partsupp=partsupp,
+    region=region,
+    supplier=supplier,
+)
+res
+```
+
+```{python}
+res.schema()
+```
+
+```{python}
+import sqlglot
+
+sql = res.compile()
+sql = sqlglot.transpile(sql, "datafusion", "datafusion", pretty=True)[0]
+print(sql)
+```
+
+```{python}
+res = q21(
+    customer=customer,
+    lineitem=lineitem,
+    nation=nation,
+    orders=orders,
+    part=part,
+    partsupp=partsupp,
+    region=region,
+    supplier=supplier,
+)
+```
+
+```{python}
+import sqlglot
+
+sql = res.compile()
+sql = sqlglot.transpile(sql, "datafusion", "datafusion", pretty=True)[0]
+print(sql)
+```
+
+```{python}
+res = q22(
+    customer=customer,
+    lineitem=lineitem,
+    nation=nation,
+    orders=orders,
+    part=part,
+    partsupp=partsupp,
+    region=region,
+    supplier=supplier,
+)
+res
+```
+
+```{python}
+import sqlglot
+
+sql = res.compile()
+sql = sqlglot.transpile(sql, "datafusion", "datafusion", pretty=True)[0]
+print(sql)
+```
+
+
