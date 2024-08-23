@@ -146,8 +146,8 @@ clean-all:
 docs-preview:
     @quarto preview website
 
-# docs render
-docs-render:
+# docs build
+docs-build:
     @quarto render website
 
 # temp
