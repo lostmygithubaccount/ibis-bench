@@ -24,6 +24,7 @@ DEFAULT_SFS = [
     64,
     128,
 ]
+DEFAULT_N_PARTITIONS = [1]
 DEFAULT_QS = range(1, 23)
 
 TYPER_KWARGS = {
@@ -43,6 +44,9 @@ def run(
     scale_factors: list[int] = typer.Option(
         DEFAULT_SFS, "--scale-factor", "-s", help="scale factors"
     ),
+    n_partitions: list[int] = typer.Option(
+        DEFAULT_N_PARTITIONS, "--n-partitions", "-n", help="number of partitions"
+    ),
     queries: list[int] = typer.Option(
         DEFAULT_QS, "--query-number", "-q", help="query numbers"
     ),
@@ -61,17 +65,18 @@ def run(
     """
     for _ in range(repeat):
         for sf in scale_factors:
-            for system in systems:
-                for q in queries:
-                    cmd = f"bench run {system} -s {sf} -q {q} -i '{instance_type}'"
-                    cmd += " --csv" if use_csv else ""
+            for n in n_partitions:
+                for system in systems:
+                    for q in queries:
+                        cmd = f"bench tpch run {system} -s {sf} -n {n} -q {q} -i '{instance_type}'"
+                        cmd += " --csv" if use_csv else ""
 
-                    log.info(f"running: {cmd}")
-                    res = subprocess.run(cmd, shell=True)
-                    if res.returncode != 0:
-                        log.info(f"failed to run: {cmd}")
+                        log.info(f"running: {cmd}")
+                        res = subprocess.run(cmd, shell=True)
+                        if res.returncode != 0:
+                            log.info(f"failed to run: {cmd}")
 
-                    log.info(f"finished running: {cmd}")
+                        log.info(f"finished running: {cmd}")
 
 
 @app.command()
