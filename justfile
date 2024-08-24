@@ -24,7 +24,6 @@ build:
 
 # setup
 setup:
-    @pip install uv
     @uv venv
     @. .venv/bin/activate
     @uv pip install --upgrade --resolution=highest -r dev-requirements.txt
