@@ -19,11 +19,11 @@ classifiers = [
 ]
 dependencies = [
     # data stuff
-    #'ibis-framework[duckdb,datafusion,polars] == 9.3.0', #  @ git+https://github.com/ibis-project/ibis',
-    'ibis-framework @ git+https://github.com/ibis-project/ibis',
-    'duckdb==1.0.0',
-    'datafusion==40.1.0',
-    'polars==1.5.0',
+    'ibis-framework[duckdb,datafusion,polars] == 9.3.0', #  @ git+https://github.com/ibis-project/ibis',
+    #'ibis-framework @ git+https://github.com/ibis-project/ibis',
+    #'duckdb==1.0.0',
+    #'datafusion==40.1.0',
+    #'polars==1.5.0',
     # other stuff
     'typer',
     'python-dotenv',
