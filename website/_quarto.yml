@@ -16,15 +16,6 @@ website:
   back-to-top-navigation: true
   repo-url: https://github.com/lostmygithubaccount/ibis-bench
 
-  # navbar
-  navbar: 
-    left:
-      - analysis.qmd
-      - text: "Querying 1TB on a laptop with Python dataframes"
-        href: https://ibis-project.org/posts/1tbc
-      - text: "First Ibis benchmarking report"
-        href: https://ibis-project.org/posts/ibis-bench
-
   # footer
   page-footer:
     border: false

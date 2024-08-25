@@ -10,18 +10,19 @@ about:
 
 ***A composable data system benchmark in a Python package.***
 
-Ibis is an **interface**, not an **engine**. There's no such thing as a zero-cost abstraction with no overhead, but Ibis is designed to add as little as possible to your workloads while enabling you to scale with the best engines available. This repository is used to:
+## Overview
 
-- benchmark various engines via the same interface
-- roughly assess the overhead of using Ibis (by comparing with native queries)
-
-with a focus on the former and, currently, single-node OLAP engines.
+Ibis is an **interface**, not an **engine**. Ibis allows you to use the best engine for your workload. The Ibis benchmarking project is used to benchmark various engines with Ibis.
 
 ![Source: [Voltron Data Composable Codex](https://voltrondata.com/codex)](img/layers.png)
 
 ## Benchmarks
 
-See the navbar.
+See the following benchmarks:
+
+- [August 2024 ad hoc analysis](analysis.qmd)
+- [Querying 1TB on a laptop with Python dataframes](https://ibis-project.org/posts/1tbc)
+- [Introducing Ibis benchmarking](https://ibis-project.org/posts/ibis-bench)
 
 ## Getting started
 
@@ -47,7 +48,7 @@ just setup
 Run:
 
 ```bash
-pip install --upgrade ibis-bench
+pip install ibis-bench
 ```
 
 :::
