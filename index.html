@@ -58,7 +58,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 
 <script src="site_libs/quarto-nav/quarto-nav.js"></script>
-<script src="site_libs/quarto-nav/headroom.min.js"></script>
 <script src="site_libs/clipboard/clipboard.min.js"></script>
 <script src="site_libs/quarto-html/quarto.js"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
@@ -90,50 +89,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <meta name="twitter:card" content="summary">
 </head>
 
-<body class="nav-fixed">
+<body>
 
 <div id="quarto-search-results"></div>
-  <header id="quarto-header" class="headroom fixed-top">
-    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
-      <div class="navbar-container container-fluid">
-      <div class="navbar-brand-container mx-auto">
-    <a class="navbar-brand" href="./index.html">
-    <span class="navbar-title">Ibis benchmarking</span>
-    </a>
-  </div>
-          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
-  <span class="navbar-toggler-icon"></span>
-</button>
-          <div class="collapse navbar-collapse" id="navbarCollapse">
-            <ul class="navbar-nav navbar-nav-scroll me-auto">
-  <li class="nav-item">
-    <a class="nav-link" href="./analysis.html"> 
-<span class="menu-text">August 2024 – ad hoc analysis</span></a>
-  </li>  
-  <li class="nav-item">
-    <a class="nav-link" href="https://ibis-project.org/posts/1tbc"> 
-<span class="menu-text">Querying 1TB on a laptop with Python dataframes</span></a>
-  </li>  
-  <li class="nav-item">
-    <a class="nav-link" href="https://ibis-project.org/posts/ibis-bench"> 
-<span class="menu-text">First Ibis benchmarking report</span></a>
-  </li>  
-</ul>
-          </div> <!-- /navcollapse -->
-            <div class="quarto-navbar-tools">
-</div>
-      </div> <!-- /container-fluid -->
-    </nav>
-</header>
 <!-- content -->
-<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
 <!-- sidebar -->
 <!-- margin-sidebar -->
     <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
         <nav id="TOC" role="doc-toc" class="toc-active">
     <h2 id="toc-title">On this page</h2>
   <ul>
-  <li><a href="#benchmarks" id="toc-benchmarks" class="nav-link active" data-scroll-target="#benchmarks">Benchmarks</a></li>
+  <li><a href="#overview" id="toc-overview" class="nav-link active" data-scroll-target="#overview">Overview</a></li>
+  <li><a href="#benchmarks" id="toc-benchmarks" class="nav-link" data-scroll-target="#benchmarks">Benchmarks</a></li>
   <li><a href="#getting-started" id="toc-getting-started" class="nav-link" data-scroll-target="#getting-started">Getting started</a>
   <ul class="collapse">
   <li><a href="#installation" id="toc-installation" class="nav-link" data-scroll-target="#installation">Installation</a></li>
@@ -161,21 +129,24 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <div class="about-contents"><main class="content" id="quarto-document-content">
 
 <p><strong><em>A composable data system benchmark in a Python package.</em></strong></p>
-<p>Ibis is an <strong>interface</strong>, not an <strong>engine</strong>. There’s no such thing as a zero-cost abstraction with no overhead, but Ibis is designed to add as little as possible to your workloads while enabling you to scale with the best engines available. This repository is used to:</p>
-<ul>
-<li>benchmark various engines via the same interface</li>
-<li>roughly assess the overhead of using Ibis (by comparing with native queries)</li>
-</ul>
-<p>with a focus on the former and, currently, single-node OLAP engines.</p>
+<section id="overview" class="level2">
+<h2 data-anchor-id="overview">Overview</h2>
+<p>Ibis is an <strong>interface</strong>, not an <strong>engine</strong>. Ibis allows you to use the best engine for your workload. The Ibis benchmarking project is used to benchmark various engines with Ibis.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="img/layers.png" class="img-fluid figure-img"></p>
 <figcaption>Source: <a href="https://voltrondata.com/codex">Voltron Data Composable Codex</a></figcaption>
 </figure>
 </div>
+</section>
 <section id="benchmarks" class="level2">
 <h2 data-anchor-id="benchmarks">Benchmarks</h2>
-<p>See the navbar.</p>
+<p>See the following benchmarks:</p>
+<ul>
+<li><a href="./analysis.html">August 2024 ad hoc analysis</a></li>
+<li><a href="https://ibis-project.org/posts/1tbc">Querying 1TB on a laptop with Python dataframes</a></li>
+<li><a href="https://ibis-project.org/posts/ibis-bench">Introducing Ibis benchmarking</a></li>
+</ul>
 </section>
 <section id="getting-started" class="level2">
 <h2 data-anchor-id="getting-started">Getting started</h2>
@@ -194,7 +165,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <div id="tabset-1-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-2-tab">
 <p>Run:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install <span class="at">--upgrade</span> ibis-bench</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install ibis-bench</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </div>
 </div>
